@@ -1,0 +1,7 @@
+[
+    {
+      "origin": ["https://6000-firebase-studio-1756985773268.cluster-cbeiita7rbe7iuwhvjs5zww2i4.cloudworkstations.dev"],
+      "method": ["GET"],
+      "maxAgeSeconds": 3600
+    }
+  ]
