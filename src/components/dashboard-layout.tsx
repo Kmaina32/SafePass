@@ -14,6 +14,7 @@ import type { Notification as NotificationType } from "@/lib/types";
 import { ref, onValue, off } from "firebase/database";
 import { Badge } from "./ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 
 export type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings' | 'admin' | 'documentation';
 
@@ -130,6 +131,8 @@ function NotificationBell({ user }: { user: FirebaseUser | null | undefined }) {
 export function DashboardLayout({ user, children, onLock, activeView, onNavigate }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
+  const userInitial = user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'U';
+
   return (
     <div className="flex min-h-screen w-full bg-muted/40">
         <aside className="hidden w-64 flex-col border-r bg-background sm:flex">
@@ -155,8 +158,11 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                         </Link>
                     </Button>
                 </nav>
-                <div className="flex items-center gap-2 pt-4 border-t">
-                    {user?.photoURL && <img src={user.photoURL} alt="User" className="h-8 w-8 rounded-full" />}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <Avatar className="h-10 w-10">
+                        <AvatarImage src={user?.photoURL || undefined} alt="User Avatar" />
+                        <AvatarFallback>{userInitial}</AvatarFallback>
+                    </Avatar>
                     <div className="flex flex-col overflow-hidden">
                         <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
                         <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
