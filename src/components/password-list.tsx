@@ -1,0 +1,148 @@
+"use client";
+
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { decrypt } from "@/lib/encryption";
+import type { Credential } from "@/lib/types";
+import { Copy, Eye, EyeOff, Globe, Trash2, User, KeyRound } from "lucide-react";
+
+type PasswordListProps = {
+  credentials: Credential[];
+  masterPassword: string;
+  onDeleteCredential: (id: string) => void;
+};
+
+export function PasswordList({
+  credentials,
+  masterPassword,
+  onDeleteCredential,
+}: PasswordListProps) {
+  const { toast } = useToast();
+  const [visiblePasswordId, setVisiblePasswordId] = useState<string | null>(null);
+
+  const handleCopy = async (id: string) => {
+    const credential = credentials.find((c) => c.id === id);
+    if (!credential) return;
+
+    try {
+      const decryptedPassword = decrypt(credential.password_encrypted, masterPassword);
+      await navigator.clipboard.writeText(decryptedPassword);
+      toast({
+        title: "Success",
+        description: "Password copied to clipboard.",
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to copy password. Master password may be incorrect.",
+      });
+    }
+  };
+
+  const togglePasswordVisibility = (id: string) => {
+    if (visiblePasswordId === id) {
+      setVisiblePasswordId(null);
+    } else {
+      setVisiblePasswordId(id);
+    }
+  };
+
+  if (credentials.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground mt-16 flex flex-col items-center gap-4">
+        <KeyRound className="w-16 h-16" />
+        <h3 className="text-xl font-semibold">Your vault is empty.</h3>
+        <p>Click "Add New Password" to get started.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {credentials.map((credential) => {
+        const isVisible = visiblePasswordId === credential.id;
+        const decryptedPassword = isVisible
+          ? decrypt(credential.password_encrypted, masterPassword)
+          : "";
+
+        return (
+          <Card key={credential.id} className="flex flex-col">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <Globe className="h-5 w-5" />
+                <span className="truncate">{credential.url}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-4">
+              <div className="flex items-center gap-3 text-sm">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium truncate">{credential.username}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <KeyRound className="h-4 w-4 text-muted-foreground" />
+                <span className="font-mono text-muted-foreground flex-grow">
+                    {isVisible ? decryptedPassword : "••••••••••••"}
+                </span>
+                 <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => togglePasswordVisibility(credential.id)}
+                    aria-label={isVisible ? "Hide password" : "Show password"}
+                  >
+                    {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => handleCopy(credential.id)}
+                >
+                  <Copy />
+                  Copy Password
+                </Button>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="icon" aria-label="Delete password">
+                        <Trash2 className="text-destructive" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete this password from your vault.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDeleteCredential(credential.id)} className="bg-destructive hover:bg-destructive/90">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
