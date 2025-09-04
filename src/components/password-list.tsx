@@ -87,29 +87,29 @@ export function PasswordList({
         return (
           <Card key={credential.id} className="flex flex-col transition-all hover:shadow-lg">
             <CardHeader className="pb-4">
-              <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <Globe className="h-6 w-6 text-primary" />
-                    <span className="truncate text-lg font-semibold">{credential.url}</span>
+              <div className="flex justify-between items-start gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Globe className="h-6 w-6 text-primary flex-shrink-0" />
+                    <span className="truncate text-lg font-semibold" title={credential.url}>{credential.url}</span>
                   </div>
-                  {credential.category && <Badge variant="secondary">{credential.category}</Badge>}
+                  {credential.category && <Badge variant="secondary" className="flex-shrink-0">{credential.category}</Badge>}
               </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-4 flex flex-col">
                 <div className="flex-grow space-y-3">
-                    <div className="flex items-center gap-3 text-sm">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium truncate">{credential.username}</span>
+                    <div className="flex items-center gap-3 text-sm min-w-0">
+                        <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="font-medium truncate" title={credential.username}>{credential.username}</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
-                        <KeyRound className="h-4 w-4 text-muted-foreground" />
+                        <KeyRound className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         <span className="font-mono text-muted-foreground flex-grow">
                             {isVisible ? decryptedPassword : "••••••••••••"}
                         </span>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 flex-shrink-0"
                             onClick={() => togglePasswordVisibility(credential.id)}
                             aria-label={isVisible ? "Hide password" : "Show password"}
                         >
