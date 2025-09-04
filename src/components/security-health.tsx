@@ -50,7 +50,7 @@ export function SecurityHealth({ credentials, masterPassword }: SecurityHealthPr
           const analysis = await analyzePassword({ password });
           analysesMap.set(id, analysis);
         } catch (e) {
-          console.error(`Failed to analyze password for id ${id}`);
+          console.error(`Failed to analyze password for id ${id}`, e);
         }
       }
       setPasswordAnalyses(analysesMap);
