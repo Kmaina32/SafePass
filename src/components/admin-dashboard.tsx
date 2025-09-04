@@ -13,7 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { ExternalLink, HelpCircle, Bell, ShieldAlert } from "lucide-react";
+import { ExternalLink, HelpCircle, Bell, ShieldAlert, User } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 interface UserRecord {
