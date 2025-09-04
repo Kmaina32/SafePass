@@ -43,7 +43,6 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",
     "dotenv": "^16.5.0",
-    "embla-carousel-autoplay": "^8.1.1",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^10.12.2",
     "react-firebase-hooks": "^5.1.1",
@@ -76,3 +75,5 @@
     "typescript": "^5"
   }
 }
+
+    
