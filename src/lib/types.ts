@@ -22,5 +22,5 @@ export interface SecureDocument {
 export interface UserData {
   masterPasswordCheck: string;
   credentials: Credential[];
-  documents?: SecureDocument[];
+  documents: SecureDocument[];
 }

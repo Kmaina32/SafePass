@@ -9,20 +9,19 @@ import { encrypt, decrypt } from "@/lib/encryption";
 import type { Credential, UserData, SecureDocument } from "@/lib/types";
 import { auth, db, storage } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { ref, onValue, set, get, child } from "firebase/database";
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, onValue, set } from "firebase/database";
+import { ref as storageRef, uploadBytes, deleteObject } from "firebase/storage";
 import { SignInPage } from "./sign-in-page";
 import { CreateMasterPasswordForm } from "./create-master-password-form";
 import { LoadingDisplay } from "./loading-display";
 import { DashboardLayout } from "./dashboard-layout";
-import { DocumentList } from "./document-list";
 import { useToast } from "@/hooks/use-toast";
 import CryptoJS from "crypto-js";
 
 const CHECK_VALUE = "safepass_ok";
 
 // Function to encrypt a file
-async function encryptFile(file: File, key: string): Promise<{ encryptedBlob: Blob, iv: string, randomKey: string }> {
+async function encryptFile(file: File): Promise<{ encryptedBlob: Blob, iv: string, randomKey: string }> {
   const randomKey = CryptoJS.lib.WordArray.random(32).toString(); // 256-bit key
   const iv = CryptoJS.lib.WordArray.random(16).toString(); // 128-bit IV
   
@@ -150,7 +149,7 @@ export function SafePassContainer() {
 
   const handleDeleteCredential = (id: string) => {
     if (!user || !userData) return;
-    const updatedCredentials = userData.credentials.filter((c) => c.id !== id);
+    const updatedCredentials = (userData.credentials || []).filter((c) => c.id !== id);
     set(ref(db, `users/${user.uid}/credentials`), updatedCredentials)
       .catch((error) => console.error("Failed to delete credential", error));
   };
@@ -160,7 +159,7 @@ export function SafePassContainer() {
 
     try {
       // 1. Encrypt the file
-      const { encryptedBlob, iv, randomKey } = await encryptFile(file, masterPassword);
+      const { encryptedBlob, iv, randomKey } = await encryptFile(file);
 
       // 2. Encrypt the randomKey with the master password
       const encryptedKey = encrypt(randomKey, masterPassword);
@@ -191,6 +190,7 @@ export function SafePassContainer() {
     } catch (error) {
         console.error("Error uploading document:", error);
         toast({ variant: 'destructive', title: "Upload Failed", description: "Could not securely upload the document." });
+        throw error;
     }
   }
   
@@ -223,7 +223,7 @@ export function SafePassContainer() {
   };
 
   if (!isMounted || loading) {
-    return <div className="flex items-center justify-center h-full w-full"><LoadingDisplay /></div>;
+    return <div className="flex items-center justify-center h-screen w-full"><LoadingDisplay /></div>;
   }
 
   if (!user) {
@@ -231,12 +231,12 @@ export function SafePassContainer() {
   }
 
   if (!userData?.masterPasswordCheck) {
-    return <div className="flex items-center justify-center h-full w-full p-4"><CreateMasterPasswordForm onSubmit={handleCreateMasterPassword} error={authError} /></div>;
+    return <div className="flex items-center justify-center h-screen w-full p-4"><CreateMasterPasswordForm onSubmit={handleCreateMasterPassword} error={authError} /></div>;
   }
   
   if (!isUnlocked) {
     return (
-      <div className="flex items-center justify-center h-full w-full p-4">
+      <div className="flex items-center justify-center h-screen w-full p-4">
         <MasterPasswordForm
           isInitialSetup={false}
           onUnlock={handleUnlock}
@@ -254,23 +254,17 @@ export function SafePassContainer() {
         activeView={activeView}
         onNavigate={setActiveView}
     >
-        {activeView === 'passwords' ? (
-            <PasswordManager
-                credentials={userData?.credentials || []}
-                masterPassword={masterPassword}
-                onAddCredential={handleAddCredential}
-                onUpdateCredential={handleUpdateCredential}
-                onDeleteCredential={handleDeleteCredential}
-                activeView={activeView}
-                onAddDocument={handleAddDocument}
-            />
-        ) : (
-            <DocumentList
-                documents={userData?.documents || []}
-                masterPassword={masterPassword}
-                onDeleteDocument={handleDeleteDocument}
-            />
-        )}
+      <PasswordManager
+          credentials={userData?.credentials || []}
+          documents={userData?.documents || []}
+          masterPassword={masterPassword}
+          onAddCredential={handleAddCredential}
+          onUpdateCredential={handleUpdateCredential}
+          onDeleteCredential={handleDeleteCredential}
+          activeView={activeView}
+          onAddDocument={handleAddDocument}
+          onDeleteDocument={handleDeleteDocument}
+      />
     </DashboardLayout>
   );
 }

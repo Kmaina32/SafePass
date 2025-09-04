@@ -14,11 +14,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { decrypt } from "@/lib/encryption";
 import type { Credential } from "@/lib/types";
-import { Copy, Eye, EyeOff, Globe, Trash2, User, KeyRound, Tag, Pencil, Info } from "lucide-react";
+import { Copy, Eye, EyeOff, Globe, Trash2, User, KeyRound, Info } from "lucide-react";
 import { EditPasswordDialog } from "./edit-password-dialog";
 import { Badge } from "./ui/badge";
 
@@ -90,7 +90,7 @@ export function PasswordList({
               <div className="flex justify-between items-start gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <Globe className="h-6 w-6 text-primary flex-shrink-0" />
-                    <span className="truncate text-lg font-semibold" title={credential.url}>{credential.url}</span>
+                    <CardTitle className="text-lg truncate" title={credential.url}>{credential.url}</CardTitle>
                   </div>
                   {credential.category && <Badge variant="secondary" className="flex-shrink-0">{credential.category}</Badge>}
               </div>
@@ -117,8 +117,8 @@ export function PasswordList({
                         </Button>
                     </div>
                     {credential.notes && (
-                         <div className="flex items-start gap-3 text-sm text-muted-foreground bg-muted/50 p-2 rounded-md">
-                            <Info className="h-4 w-4 flex-shrink-0 mt-0.5"/>
+                         <div className="flex items-start gap-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border">
+                            <Info className="h-4 w-4 flex-shrink-0 mt-0.5 text-primary"/>
                             <p className="text-xs break-words">{credential.notes}</p>
                          </div>
                     )}
@@ -126,7 +126,6 @@ export function PasswordList({
 
               <div className="flex gap-2 pt-4 border-t">
                 <Button
-                  variant="secondary"
                   className="w-full"
                   onClick={() => handleCopy(credential.id)}
                 >
