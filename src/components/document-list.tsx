@@ -150,9 +150,9 @@ a.click();
                 </div>
 
               <div className="flex flex-col gap-2 pt-4 border-t">
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2">
                     <Button
-                      className="flex-1"
+                      className="w-full"
                       onClick={() => handleDownload(doc)}
                       disabled={isDownloading === doc.id || doc.isLocked}
                     >
@@ -166,7 +166,7 @@ a.click();
                     {isImage && (
                         <Button
                             variant="secondary"
-                            className="flex-1"
+                            className="w-full"
                             onClick={() => handleDownload(doc, true)}
                             disabled={isDownloading === doc.id || doc.isLocked}
                         >
