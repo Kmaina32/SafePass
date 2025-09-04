@@ -60,6 +60,13 @@ export interface Identity {
     notes?: string;
 }
 
+export interface Notification {
+    id: string;
+    title: string;
+    message: string;
+    timestamp: string;
+    isRead: boolean;
+}
 
 export interface UserData {
   masterPasswordCheck: string;
@@ -68,10 +75,15 @@ export interface UserData {
   paymentCards: PaymentCard[];
   secureNotes: SecureNote[];
   identities: Identity[];
+  notifications: Notification[];
   lastSeen?: string;
   profile?: {
       email?: string | null;
       displayName?: string | null;
       photoURL?: string | null;
   }
+}
+
+export interface AppConfig {
+    signInImageUrl?: string;
 }

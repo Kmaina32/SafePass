@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,17 +23,19 @@ import {
     FormMessage,
   } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import {
   GoogleAuthProvider,
   signInWithPopup,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { ShieldCheck, Lock, KeyRound, Cloud, BookOpen, Fingerprint } from "lucide-react";
+import { ref, onValue } from "firebase/database";
+import { ShieldCheck, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
+import { AppConfig } from "@/lib/types";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -63,7 +65,19 @@ const formSchema = z.object({
 
 export function SignInPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [config, setConfig] = useState<AppConfig>({});
   const { toast } = useToast();
+
+  useEffect(() => {
+      const configRef = ref(db, 'config');
+      const unsubscribe = onValue(configRef, (snapshot) => {
+          const data = snapshot.val();
+          if(data) {
+              setConfig(data);
+          }
+      });
+      return () => unsubscribe();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -103,6 +117,9 @@ export function SignInPage() {
 
   const { isSubmitting } = form.formState;
 
+  const imageUrl = config.signInImageUrl || "https://picsum.photos/1200/1800";
+
+
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
       <div className="relative hidden lg:flex flex-col items-center justify-center bg-primary text-primary-foreground p-10">
@@ -121,7 +138,7 @@ export function SignInPage() {
             </Button>
         </div>
         <Image 
-            src="https://picsum.photos/1200/1800" 
+            src={imageUrl}
             alt="Abstract security background"
             data-ai-hint="security abstract"
             fill

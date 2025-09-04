@@ -5,7 +5,7 @@
 import { AddPasswordDialog } from "@/components/add-password-dialog";
 import { PasswordList } from "@/components/password-list";
 import type { Credential, PaymentCard, SecureDocument, SecureNote, Identity } from "@/lib/types";
-import { Search, KeyRound, FileText, CreditCard, Shield, Settings, RotateCw, User, StickyNote, Trash2, LayoutGrid } from "lucide-react";
+import { Search, KeyRound, FileText, CreditCard, Shield, Settings, RotateCw, User, StickyNote, Trash2, LayoutGrid, BookOpen, ShieldQuestion } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState, useMemo } from "react";
 import { AddDocumentDialog } from "./add-document-dialog";
@@ -92,7 +92,8 @@ function EmptyState({ view }: { view: ActiveView }) {
         generator: { icon: RotateCw, title: "Password Generator", message: "Create strong, unique passwords for all your accounts."},
         trash: { icon: Trash2, title: "Trash", message: "Review and restore items you've recently deleted. This feature is coming soon!"},
         settings: { icon: Settings, title: "Settings", message: "Customize your SafePass experience, including themes and security."},
-        admin: { icon: User, title: "Admin Panel", message: "Manage users and application settings."}
+        admin: { icon: ShieldQuestion, title: "Admin Panel", message: "Manage users and application settings."},
+        documentation: { icon: BookOpen, title: "Capstone Documentation", message: "Viewing project documentation."}
     }[view];
 
     if (!content) return null;

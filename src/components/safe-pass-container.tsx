@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,7 +6,7 @@ import { MasterPasswordForm } from "@/components/master-password-form";
 import { PasswordManager } from "@/components/password-manager";
 import { useMounted } from "@/hooks/use-mounted";
 import { encrypt, decrypt } from "@/lib/encryption";
-import type { Credential, UserData, SecureDocument, PaymentCard, SecureNote, Identity } from "@/lib/types";
+import type { Credential, UserData, SecureDocument, PaymentCard, SecureNote, Identity, Notification, AppConfig } from "@/lib/types";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { ref, onValue, set, remove, update } from "firebase/database";
@@ -17,7 +16,6 @@ import { LoadingDisplay } from "./loading-display";
 import { DashboardLayout, ActiveView } from "./dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import CryptoJS from "crypto-js";
-import { AdminDashboard } from "./admin-dashboard";
 
 const CHECK_VALUE = "safepass_ok";
 const MAX_FILE_SIZE_MB = 5;
@@ -95,6 +93,15 @@ export function SafePassContainer() {
   const handleCreateMasterPassword = (password: string) => {
     if (!user) return;
     const newCheck = encrypt(CHECK_VALUE, password);
+
+    const welcomeNotification: Notification = {
+        id: crypto.randomUUID(),
+        title: "Welcome to SafePass!",
+        message: "Your secure vault is ready. Start by adding your first password.",
+        timestamp: new Date().toISOString(),
+        isRead: false
+    }
+
     const newUser: UserData = {
       masterPasswordCheck: newCheck,
       credentials: [],
@@ -102,6 +109,7 @@ export function SafePassContainer() {
       paymentCards: [],
       secureNotes: [],
       identities: [],
+      notifications: [welcomeNotification],
       lastSeen: new Date().toISOString(),
        profile: {
             email: user.email,
@@ -435,12 +443,14 @@ export function SafePassContainer() {
       </div>
     );
   }
-
-  const renderContent = () => {
-    if (activeView === 'admin') {
-      return <AdminDashboard />;
-    }
-    return (
+  
+  return (
+    <DashboardLayout
+        user={user}
+        onLock={handleLock}
+        activeView={activeView}
+        onNavigate={setActiveView}
+    >
       <PasswordManager
           credentials={userData?.credentials || []}
           documents={userData?.documents || []}
@@ -465,17 +475,6 @@ export function SafePassContainer() {
           onUpdateIdentity={handleUpdateIdentity}
           onDeleteIdentity={handleDeleteIdentity}
       />
-    );
-  }
-
-  return (
-    <DashboardLayout
-        user={user}
-        onLock={handleLock}
-        activeView={activeView}
-        onNavigate={setActiveView}
-    >
-      {renderContent()}
     </DashboardLayout>
   );
 }

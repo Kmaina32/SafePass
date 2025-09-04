@@ -3,18 +3,20 @@
 
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { ref, onValue, off } from "firebase/database";
+import { ref, onValue, off, set, get, child, push } from "firebase/database";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { UserData } from "@/lib/types";
+import type { UserData, AppConfig, Notification } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { ExternalLink, HelpCircle, Bell, ShieldAlert, User } from "lucide-react";
+import { User, HelpCircle, Bell, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "./ui/textarea";
 
 interface UserRecord {
     uid: string;
@@ -24,10 +26,22 @@ interface UserRecord {
 export function AdminDashboard() {
     const [users, setUsers] = useState<UserRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [config, setConfig] = useState<AppConfig>({});
+    const { toast } = useToast();
+
+    // Form states
+    const [imageUrl, setImageUrl] = useState('');
+    const [notificationTitle, setNotificationTitle] = useState('');
+    const [notificationMessage, setNotificationMessage] = useState('');
+    const [isUpdatingImage, setIsUpdatingImage] = useState(false);
+    const [isSendingNotification, setIsSendingNotification] = useState(false);
+
 
     useEffect(() => {
         const usersRef = ref(db, 'users');
-        const listener = onValue(usersRef, (snapshot) => {
+        const configRef = ref(db, 'config');
+
+        const usersListener = onValue(usersRef, (snapshot) => {
             const usersData = snapshot.val();
             if (usersData) {
                 const userList: UserRecord[] = Object.entries(usersData).map(([uid, data]) => ({
@@ -39,8 +53,71 @@ export function AdminDashboard() {
             setIsLoading(false);
         });
 
-        return () => off(usersRef, 'value', listener);
+        const configListener = onValue(configRef, (snapshot) => {
+            const configData = snapshot.val();
+            if(configData) {
+                setConfig(configData);
+                setImageUrl(configData.signInImageUrl || '');
+            }
+        });
+
+        return () => {
+            off(usersRef, 'value', usersListener);
+            off(configRef, 'value', configListener);
+        }
     }, []);
+
+    const handleUpdateImage = async () => {
+        setIsUpdatingImage(true);
+        try {
+            await set(ref(db, 'config/signInImageUrl'), imageUrl);
+            toast({ title: 'Success', description: 'Sign-in page image updated.' });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update image.' });
+        } finally {
+            setIsUpdatingImage(false);
+        }
+    }
+
+    const handleSendNotification = async () => {
+        if (!notificationTitle || !notificationMessage) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Title and message are required.' });
+            return;
+        }
+        setIsSendingNotification(true);
+        try {
+            const usersRef = ref(db, 'users');
+            const snapshot = await get(usersRef);
+            if (snapshot.exists()) {
+                const usersData = snapshot.val();
+                const newNotification: Omit<Notification, 'id'> = {
+                    title: notificationTitle,
+                    message: notificationMessage,
+                    timestamp: new Date().toISOString(),
+                    isRead: false,
+                };
+                
+                const updates: {[key: string]: any} = {};
+                Object.keys(usersData).forEach(uid => {
+                    const notificationId = push(child(ref(db), `users/${uid}/notifications`)).key;
+                    updates[`/users/${uid}/notifications/${notificationId}`] = {...newNotification, id: notificationId};
+                });
+                
+                await set(ref(db), { ...snapshot.val(), ...updates });
+                
+                toast({ title: 'Success', description: 'Global notification sent to all users.' });
+                setNotificationTitle('');
+                setNotificationMessage('');
+            }
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to send notification.' });
+        } finally {
+            setIsSendingNotification(false);
+        }
+    }
+
 
     const totalUsers = users.length;
     const activeToday = users.filter(u => u.data.lastSeen && new Date(u.data.lastSeen) > new Date(Date.now() - 24 * 60 * 60 * 1000)).length;
@@ -143,14 +220,16 @@ export function AdminDashboard() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Bell /> Global Notifications</CardTitle>
-                        <CardDescription>Send a notification to all users (feature coming soon).</CardDescription>
+                        <CardDescription>Send a notification to all users.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Input placeholder="Notification Title" disabled />
-                        <Input placeholder="Notification Message" disabled />
+                        <Input placeholder="Notification Title" value={notificationTitle} onChange={(e) => setNotificationTitle(e.target.value)} disabled={isSendingNotification} />
+                        <Textarea placeholder="Notification Message" value={notificationMessage} onChange={(e) => setNotificationMessage(e.target.value)} disabled={isSendingNotification} />
                     </CardContent>
                     <CardFooter>
-                        <Button disabled>Send Notification</Button>
+                        <Button onClick={handleSendNotification} disabled={isSendingNotification}>
+                            {isSendingNotification ? 'Sending...' : 'Send Notification'}
+                        </Button>
                     </CardFooter>
                 </Card>
                 
@@ -167,16 +246,18 @@ export function AdminDashboard() {
                 <Card>
                      <CardHeader>
                         <CardTitle>Auth Page Configuration</CardTitle>
-                        <CardDescription>Control the image displayed on the sign-in page (feature coming soon).</CardDescription>
+                        <CardDescription>Control the image displayed on the sign-in page.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
                             <Label htmlFor="image-url">Image URL</Label>
-                            <Input id="image-url" placeholder="https://picsum.photos/1200/1800" disabled />
+                            <Input id="image-url" placeholder="https://picsum.photos/1200/1800" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} disabled={isUpdatingImage} />
                         </div>
                     </CardContent>
                      <CardFooter>
-                        <Button disabled>Update Image</Button>
+                        <Button onClick={handleUpdateImage} disabled={isUpdatingImage}>
+                            {isUpdatingImage ? 'Updating...' : 'Update Image'}
+                        </Button>
                     </CardFooter>
                 </Card>
             </div>

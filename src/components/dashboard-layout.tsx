@@ -2,15 +2,20 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Lock, LogOut, FileText, KeyRound, ShieldCheck, Menu, User, CreditCard, StickyNote, LifeBuoy, Settings, Trash2, LayoutGrid, RotateCw, BookOpen, ShieldQuestion } from "lucide-react";
+import { Lock, LogOut, FileText, KeyRound, ShieldCheck, Menu, User, CreditCard, StickyNote, LifeBuoy, Settings, Trash2, LayoutGrid, RotateCw, BookOpen, ShieldQuestion, Bell } from "lucide-react";
 import type { User as FirebaseUser } from 'firebase/auth';
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
+import type { Notification as NotificationType } from "@/lib/types";
+import { ref, onValue, off } from "firebase/database";
+import { Badge } from "./ui/badge";
+import { formatDistanceToNow } from "date-fns";
 
-export type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings' | 'admin';
+export type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings' | 'admin' | 'documentation';
 
 const ADMIN_EMAIL = "gmaina424@gmail.com";
 
@@ -36,7 +41,6 @@ const navItems = [
 ] as const;
 
 const adminNavItem = { view: 'admin', label: 'Admin Panel', icon: ShieldQuestion } as const;
-
 
 function SidebarNav({ activeView, onNavigate, user }: { activeView: ActiveView, onNavigate: (view: ActiveView) => void, user: FirebaseUser | null | undefined }) {
     const isUserAdmin = user?.email === ADMIN_EMAIL;
@@ -68,6 +72,61 @@ function SidebarNav({ activeView, onNavigate, user }: { activeView: ActiveView, 
     );
 }
 
+function NotificationBell({ user }: { user: FirebaseUser | null | undefined }) {
+    const [notifications, setNotifications] = useState<NotificationType[]>([]);
+
+    useEffect(() => {
+        if (!user) return;
+        const notificationsRef = ref(db, `users/${user.uid}/notifications`);
+        const listener = onValue(notificationsRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const sorted = Object.values(data).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                setNotifications(sorted as NotificationType[]);
+            } else {
+                setNotifications([]);
+            }
+        });
+
+        return () => off(notificationsRef, 'value', listener);
+    }, [user]);
+
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                 <Button variant="outline" size="icon" className="relative">
+                    <Bell />
+                    {unreadCount > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0">{unreadCount}</Badge>}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                    <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Notifications</h4>
+                         <p className="text-sm text-muted-foreground">
+                           You have {notifications.length} total messages.
+                        </p>
+                    </div>
+                    <div className="grid gap-2 max-h-96 overflow-y-auto">
+                        {notifications.length > 0 ? notifications.map(n => (
+                            <div key={n.id} className="grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0">
+                                <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
+                                <div className="grid gap-1">
+                                    <p className="text-sm font-medium">{n.title}</p>
+                                    <p className="text-sm text-muted-foreground">{n.message}</p>
+                                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(n.timestamp), { addSuffix: true })}</p>
+                                </div>
+                            </div>
+                        )) : <p className="text-sm text-muted-foreground">No new notifications.</p>}
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
+    )
+}
+
 export function DashboardLayout({ user, children, onLock, activeView, onNavigate }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -84,7 +143,19 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                 <SidebarNav activeView={activeView} onNavigate={onNavigate} user={user} />
             </div>
             <div className="mt-auto p-4 border-t space-y-4">
-                <div className="flex items-center gap-2">
+                <nav className="grid items-start px-4 text-sm font-medium">
+                    <Button
+                        asChild
+                        variant={'ghost'}
+                        className="justify-start gap-3"
+                    >
+                        <Link href="/documentation">
+                            <BookOpen />
+                            Capstone Docs
+                        </Link>
+                    </Button>
+                </nav>
+                <div className="flex items-center gap-2 pt-4 border-t">
                     {user?.photoURL && <img src={user.photoURL} alt="User" className="h-8 w-8 rounded-full" />}
                     <div className="flex flex-col overflow-hidden">
                         <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
@@ -125,10 +196,25 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                                 setMobileMenuOpen(false);
                             }} />
                         </div>
+                         <div className="mt-auto p-4 border-t space-y-4">
+                            <nav className="grid items-start px-4 text-sm font-medium">
+                                <Button
+                                    asChild
+                                    variant={'ghost'}
+                                    className="justify-start gap-3"
+                                >
+                                    <Link href="/documentation" onClick={() => setMobileMenuOpen(false)}>
+                                        <BookOpen />
+                                        Capstone Docs
+                                    </Link>
+                                </Button>
+                            </nav>
+                         </div>
                     </SheetContent>
                 </Sheet>
-                <div className="flex-1">
-                    {/* Header content like search can go here, passed as children */}
+                <div className="flex-1" />
+                <div className="flex items-center gap-4">
+                    <NotificationBell user={user} />
                 </div>
             </header>
             <main className="flex-1 p-4 sm:px-6 sm:py-0">
