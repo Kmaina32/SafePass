@@ -130,7 +130,7 @@ export function SignInPage() {
         <p className="absolute bottom-4 text-xs z-10">© 2024 SafePass - A Capstone Project by George K. Maina</p>
       </div>
 
-      <div className="flex items-center justify-center p-6 sm:p-12">
+      <div className="flex items-center justify-center p-6 sm:p-12 flex-col">
         <Card className="w-full max-w-md shadow-2xl border-none sm:border">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold">
@@ -216,6 +216,14 @@ export function SignInPage() {
             </Button>
           </CardFooter>
         </Card>
+        <div className="mt-6 block lg:hidden">
+            <Button asChild variant="link" className="text-muted-foreground">
+                <Link href="/documentation">
+                    <BookOpen />
+                    View Capstone Documentation
+                </Link>
+            </Button>
+        </div>
       </div>
     </div>
   );
