@@ -132,44 +132,46 @@ export function SignInPage() {
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div className="relative hidden lg:flex flex-col items-center justify-center bg-primary text-primary-foreground py-8 pl-8 rounded-r-2xl">
-        <div className="relative z-20 text-center space-y-6">
-            <ShieldCheck className="mx-auto h-20 w-20" />
-            <div className="transition-all duration-500 animate-in fade-in-50">
-              <h1 className="text-4xl font-bold">Your Digital Fortress Awaits</h1>
-              <p className="text-lg text-primary-foreground/90 max-w-md mx-auto mt-2">
-                  SafePass offers unparalleled security with client-side encryption. Your data is yours alone—impenetrable, synced, and always at your fingertips.
-              </p>
+      <div className="relative hidden lg:block bg-muted p-8">
+        <div className="relative h-full w-full bg-primary text-primary-foreground flex flex-col items-center justify-center rounded-2xl overflow-hidden">
+            <div className="relative z-20 text-center space-y-6">
+                <ShieldCheck className="mx-auto h-20 w-20" />
+                <div className="transition-all duration-500 animate-in fade-in-50">
+                <h1 className="text-4xl font-bold">Your Digital Fortress Awaits</h1>
+                <p className="text-lg text-primary-foreground/90 max-w-md mx-auto mt-2">
+                    SafePass offers unparalleled security with client-side encryption. Your data is yours alone—impenetrable, synced, and always at your fingertips.
+                </p>
+                </div>
+                <div className="hidden lg:block">
+                    <Button asChild variant="link" className="text-primary-foreground/80 hover:text-primary-foreground text-md">
+                        <Link href="/documentation">
+                            <BookOpen />
+                            View Capstone Documentation
+                        </Link>
+                    </Button>
+                </div>
             </div>
-            <div className="hidden lg:block">
-                 <Button asChild variant="link" className="text-primary-foreground/80 hover:text-primary-foreground text-md">
-                    <Link href="/documentation">
-                        <BookOpen />
-                        View Capstone Documentation
-                    </Link>
-                </Button>
-            </div>
+            <Carousel
+            opts={{ loop: true }}
+            plugins={[Autoplay({ delay: 5000 })]}
+            className="absolute inset-0 h-full w-full"
+            >
+            <CarouselContent>
+                {imageUrls.map((url, index) => (
+                <CarouselItem key={index}>
+                    <Image 
+                        src={url}
+                        alt="Abstract security background"
+                        data-ai-hint="security abstract"
+                        fill
+                        className="object-cover opacity-10"
+                    />
+                </CarouselItem>
+                ))}
+            </CarouselContent>
+            </Carousel>
+            <p className="absolute bottom-4 text-xs z-10">© 2025 SafePass - A Capstone Project by George K. Maina</p>
         </div>
-        <Carousel
-          opts={{ loop: true }}
-          plugins={[Autoplay({ delay: 5000 })]}
-          className="absolute inset-0 h-full w-full"
-        >
-          <CarouselContent>
-            {imageUrls.map((url, index) => (
-              <CarouselItem key={index}>
-                <Image 
-                    src={url}
-                    alt="Abstract security background"
-                    data-ai-hint="security abstract"
-                    fill
-                    className="object-cover opacity-10"
-                />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-        <p className="absolute bottom-4 text-xs z-10">© 2025 SafePass - A Capstone Project by George K. Maina</p>
       </div>
 
       <div className="flex items-center justify-center p-6 sm:p-12 flex-col">
