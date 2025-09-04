@@ -128,8 +128,7 @@ export function SignInPage() {
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div className="relative hidden lg:flex flex-col items-center justify-center bg-primary text-primary-foreground p-10 overflow-hidden">
-        <div className="absolute inset-0 bg-primary-foreground/10 z-10" />
+      <div className="relative hidden lg:flex flex-col items-center justify-center bg-primary text-primary-foreground p-4">
         <div className="relative z-20 text-center space-y-6">
             <ShieldCheck className="mx-auto h-20 w-20" />
             <div className="transition-all duration-500 animate-in fade-in-50">
@@ -138,12 +137,14 @@ export function SignInPage() {
                   SafePass offers unparalleled security with client-side encryption. Your data is yours alone—impenetrable, synced, and always at your fingertips.
               </p>
             </div>
-             <Button asChild variant="link" className="text-primary-foreground/80 hover:text-primary-foreground text-md">
-                <Link href="/documentation">
-                    <BookOpen />
-                    View Capstone Documentation
-                </Link>
-            </Button>
+            <div className="hidden lg:block">
+                 <Button asChild variant="link" className="text-primary-foreground/80 hover:text-primary-foreground text-md">
+                    <Link href="/documentation">
+                        <BookOpen />
+                        View Capstone Documentation
+                    </Link>
+                </Button>
+            </div>
         </div>
         <Carousel
           opts={{ loop: true }}
