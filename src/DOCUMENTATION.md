@@ -149,7 +149,7 @@ export function SafePassContainer() {
 ## 7. Common Issues & Fixes
 
 -   **Issue:** `FirebaseError: Firebase: Error (auth/configuration-not-found)`.
--   **Cause:** This error almost always occurs if the domain you are running the app on (e.g., `localhost`) is not added to the "Authorized Domains" list in your Firebase project's Authentication settings. It can also happen if you forget to enable the sign-in providers (like Google or Email/Password).
+-   **Cause:** This error almost always occurs if the domain you are running the app on (e.g., `localhost` or a cloud development URL) is not added to the "Authorized Domains" list in your Firebase project's Authentication settings. It can also happen if you forget to enable the sign-in providers (like Google or Email/Password).
 -   **Fix:** In the Firebase Console, go to **Authentication -> Settings -> Authorized Domains** and add your development domain (e.g., `localhost` or the specific domain of your cloud development environment). Ensure your desired providers are enabled in the **Sign-in method** tab. It may take a few minutes for changes to apply.
 
 -   **Issue:** Data is not being saved to the database, with no errors.
