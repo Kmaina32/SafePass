@@ -30,8 +30,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { ShieldCheck, Lock, KeyRound, Cloud } from "lucide-react";
+import { ShieldCheck, Lock, KeyRound, Cloud, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -188,7 +189,7 @@ export function SignInPage() {
         }}>
             {mode === 'signin' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
         </Button>
-        <ul className="space-y-3 text-sm text-muted-foreground text-center">
+        <ul className="space-y-3 text-sm text-muted-foreground text-center pt-4 border-t w-full">
             <li className="flex items-center gap-3">
                 <Lock className="h-5 w-5 text-primary"/>
                 <span>Securely store all your passwords in one place.</span>
@@ -200,6 +201,10 @@ export function SignInPage() {
              <li className="flex items-center gap-3">
                 <Cloud className="h-5 w-5 text-primary"/>
                 <span>Sync your passwords across all your devices seamlessly.</span>
+            </li>
+             <li className="flex items-center gap-3 justify-center text-primary hover:underline">
+                 <BookOpen className="h-5 w-5"/>
+                 <Link href="/documentation">View Capstone Documentation</Link>
             </li>
         </ul>
       </CardFooter>
