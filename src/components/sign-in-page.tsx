@@ -113,6 +113,12 @@ export function SignInPage() {
             <p className="text-lg text-primary-foreground/90 max-w-md mx-auto">
                 SafePass offers unparalleled security with client-side encryption. Your data is yours alone—impenetrable, synced, and always at your fingertips.
             </p>
+             <Button asChild variant="link" className="text-primary-foreground/80 hover:text-primary-foreground text-md">
+                <Link href="/documentation">
+                    <BookOpen />
+                    View Capstone Documentation
+                </Link>
+            </Button>
         </div>
         <Image 
             src="https://picsum.photos/1200/1800" 

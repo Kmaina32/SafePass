@@ -84,10 +84,6 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                 <SidebarNav activeView={activeView} onNavigate={onNavigate} user={user} />
             </div>
             <div className="mt-auto p-4 border-t space-y-4">
-                 <Link href="/documentation" className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                    <BookOpen />
-                    <span>Capstone Documentation</span>
-                </Link>
                 <div className="flex items-center gap-2">
                     {user?.photoURL && <img src={user.photoURL} alt="User" className="h-8 w-8 rounded-full" />}
                     <div className="flex flex-col overflow-hidden">
