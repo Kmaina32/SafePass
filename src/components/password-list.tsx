@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -80,34 +81,37 @@ export function PasswordList({
           : "";
 
         return (
-          <Card key={credential.id} className="flex flex-col">
+          <Card key={credential.id} className="flex flex-col transition-all hover:shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-primary">
-                <Globe className="h-5 w-5" />
-                <span className="truncate">{credential.url}</span>
+              <CardTitle className="flex items-center gap-3">
+                <Globe className="h-6 w-6 text-primary" />
+                <span className="truncate text-lg font-semibold">{credential.url}</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-              <div className="flex items-center gap-3 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium truncate">{credential.username}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <KeyRound className="h-4 w-4 text-muted-foreground" />
-                <span className="font-mono text-muted-foreground flex-grow">
-                    {isVisible ? decryptedPassword : "••••••••••••"}
-                </span>
-                 <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => togglePasswordVisibility(credential.id)}
-                    aria-label={isVisible ? "Hide password" : "Show password"}
-                  >
-                    {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-              </div>
+            <CardContent className="flex-grow space-y-4 flex flex-col">
+                <div className="flex-grow space-y-3">
+                    <div className="flex items-center gap-3 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium truncate">{credential.username}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                        <KeyRound className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-mono text-muted-foreground flex-grow">
+                            {isVisible ? decryptedPassword : "••••••••••••"}
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => togglePasswordVisibility(credential.id)}
+                            aria-label={isVisible ? "Hide password" : "Show password"}
+                        >
+                            {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                    </div>
+                </div>
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2 pt-4 border-t">
                 <Button
                   variant="secondary"
                   className="w-full"

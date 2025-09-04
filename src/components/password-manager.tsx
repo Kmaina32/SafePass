@@ -35,17 +35,17 @@ export function PasswordManager({
   const [user] = useAuthState(auth);
 
   return (
-    <div className="w-full max-w-7xl">
-      <header className="flex flex-wrap justify-between items-center gap-4 mb-8">
-        <h1 className="text-4xl font-bold text-primary">SafePass Vault</h1>
-        <div className="flex gap-4 items-center">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="flex flex-wrap justify-between items-center gap-4 py-6 border-b mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-primary tracking-tight">SafePass Vault</h1>
+        <div className="flex gap-2 sm:gap-4 items-center">
             {user?.photoURL && <img src={user.photoURL} alt="User" className="h-10 w-10 rounded-full" />}
             <AddPasswordDialog onAddCredential={onAddCredential} />
             <Button variant="outline" onClick={onLock}>
               <Lock />
               Lock Vault
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => auth.signOut()}>
+            <Button variant="ghost" size="icon" onClick={() => auth.signOut()} aria-label="Sign out">
               <LogOut />
             </Button>
         </div>
