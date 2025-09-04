@@ -85,5 +85,5 @@ export interface UserData {
 }
 
 export interface AppConfig {
-    signInImageUrl?: string;
+    signInImageUrls?: string[];
 }

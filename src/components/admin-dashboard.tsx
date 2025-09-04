@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { ref, onValue, off, set, get, child, push } from "firebase/database";
+import { ref, onValue, off, set, get, child, push, update } from "firebase/database";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { UserData, AppConfig, Notification } from "@/lib/types";
@@ -30,7 +30,7 @@ export function AdminDashboard() {
     const { toast } = useToast();
 
     // Form states
-    const [imageUrl, setImageUrl] = useState('');
+    const [imageUrls, setImageUrls] = useState('');
     const [notificationTitle, setNotificationTitle] = useState('');
     const [notificationMessage, setNotificationMessage] = useState('');
     const [isUpdatingImage, setIsUpdatingImage] = useState(false);
@@ -57,7 +57,7 @@ export function AdminDashboard() {
             const configData = snapshot.val();
             if(configData) {
                 setConfig(configData);
-                setImageUrl(configData.signInImageUrl || '');
+                setImageUrls((configData.signInImageUrls || []).join('\n'));
             }
         });
 
@@ -70,11 +70,12 @@ export function AdminDashboard() {
     const handleUpdateImage = async () => {
         setIsUpdatingImage(true);
         try {
-            await set(ref(db, 'config/signInImageUrl'), imageUrl);
-            toast({ title: 'Success', description: 'Sign-in page image updated.' });
+            const urls = imageUrls.split('\n').filter(url => url.trim() !== '');
+            await set(ref(db, 'config/signInImageUrls'), urls);
+            toast({ title: 'Success', description: 'Sign-in page images updated.' });
         } catch (error) {
             console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update image.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update images.' });
         } finally {
             setIsUpdatingImage(false);
         }
@@ -87,24 +88,26 @@ export function AdminDashboard() {
         }
         setIsSendingNotification(true);
         try {
-            const usersRef = ref(db, 'users');
-            const snapshot = await get(usersRef);
-            if (snapshot.exists()) {
-                const usersData = snapshot.val();
-                const newNotification: Omit<Notification, 'id'> = {
+            const usersSnapshot = await get(ref(db, 'users'));
+            if (usersSnapshot.exists()) {
+                const usersData = usersSnapshot.val();
+                
+                const notification: Omit<Notification, 'id'> = {
                     title: notificationTitle,
                     message: notificationMessage,
                     timestamp: new Date().toISOString(),
                     isRead: false,
                 };
-                
-                const updates: {[key: string]: any} = {};
+
+                const fanOut: {[key: string]: any} = {};
                 Object.keys(usersData).forEach(uid => {
                     const notificationId = push(child(ref(db), `users/${uid}/notifications`)).key;
-                    updates[`/users/${uid}/notifications/${notificationId}`] = {...newNotification, id: notificationId};
+                    if(notificationId) {
+                         fanOut[`/users/${uid}/notifications/${notificationId}`] = {...notification, id: notificationId};
+                    }
                 });
-                
-                await set(ref(db), { ...snapshot.val(), ...updates });
+
+                await update(ref(db), fanOut);
                 
                 toast({ title: 'Success', description: 'Global notification sent to all users.' });
                 setNotificationTitle('');
@@ -246,17 +249,24 @@ export function AdminDashboard() {
                 <Card>
                      <CardHeader>
                         <CardTitle>Auth Page Configuration</CardTitle>
-                        <CardDescription>Control the image displayed on the sign-in page.</CardDescription>
+                        <CardDescription>Manage the slideshow images on the sign-in page. Enter one URL per line.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <Label htmlFor="image-url">Image URL</Label>
-                            <Input id="image-url" placeholder="https://picsum.photos/1200/1800" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} disabled={isUpdatingImage} />
+                            <Label htmlFor="image-urls">Image URLs</Label>
+                            <Textarea 
+                                id="image-urls" 
+                                placeholder="https://picsum.photos/1200/1800&#10;https://picsum.photos/1200/1801&#10;https://picsum.photos/1200/1802" 
+                                value={imageUrls} 
+                                onChange={(e) => setImageUrls(e.target.value)} 
+                                disabled={isUpdatingImage}
+                                rows={5} 
+                            />
                         </div>
                     </CardContent>
                      <CardFooter>
                         <Button onClick={handleUpdateImage} disabled={isUpdatingImage}>
-                            {isUpdatingImage ? 'Updating...' : 'Update Image'}
+                            {isUpdatingImage ? 'Updating...' : 'Update Images'}
                         </Button>
                     </CardFooter>
                 </Card>
