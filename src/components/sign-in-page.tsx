@@ -44,30 +44,32 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-const signInSchema = z.object({
-    email: z.string().email({ message: "Please enter a valid email address." }),
-    password: z.string().min(1, { message: "Password cannot be empty." }),
-});
-  
-const signUpSchema = z.object({
+const formSchema = z.object({
     email: z.string().email({ message: "Please enter a valid email address." }),
     password: z.string().min(8, { message: "Password must be at least 8 characters." }),
     confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
+}).refine((data) => {
+    // Only validate confirmPassword if it exists (i.e., in signup mode)
+    if (data.confirmPassword) {
+        return data.password === data.confirmPassword;
+    }
+    return true;
+}, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
 });
+
 
 export function SignInPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof (mode === 'signin' ? signInSchema : signUpSchema)>>({
-    resolver: zodResolver(mode === 'signin' ? signInSchema : signUpSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
       password: "",
-      ...(mode === 'signup' && { confirmPassword: "" }),
+      confirmPassword: "",
     },
   });
 
@@ -81,9 +83,13 @@ export function SignInPage() {
     }
   };
 
-  const handleEmailAuth = async (values: z.infer<typeof signInSchema> | z.infer<typeof signUpSchema>) => {
+  const handleEmailAuth = async (values: z.infer<typeof formSchema>) => {
     try {
         if (mode === 'signup') {
+            if (values.password !== values.confirmPassword) {
+                form.setError("confirmPassword", { type: "manual", message: "Passwords don't match" });
+                return;
+            }
             await createUserWithEmailAndPassword(auth, values.email, values.password);
         } else {
             await signInWithEmailAndPassword(auth, values.email, values.password);
@@ -94,7 +100,7 @@ export function SignInPage() {
     }
   };
 
-  const isSubmitting = form.formState.isSubmitting;
+  const { isSubmitting } = form.formState;
 
   return (
     <Card className="w-full max-w-md shadow-2xl">
