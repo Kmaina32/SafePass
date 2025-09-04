@@ -23,7 +23,6 @@ import CryptoJS from "crypto-js";
 import jsPDF from "jspdf";
 import { askDocument } from "@/ai/flows/document-qa-flow";
 import { type DocumentQuestionAnswer } from "@/ai/lib/types";
-import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
@@ -238,8 +237,8 @@ export function DocumentList({
                     
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="icon" aria-label="Delete document" className="flex-shrink-0">
-                            <Trash2 className="text-destructive" />
+                        <Button variant="outline" size="icon" aria-label="Delete document" className="text-destructive">
+                            <Trash2 />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
