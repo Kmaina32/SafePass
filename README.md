@@ -1,56 +1,80 @@
 # SafePass - Secure Password Manager
 
-SafePass is a secure, client-side password manager built with Next.js, Firebase, and crypto-js. It allows users to sign in with their Google account, set a master password, and securely store their credentials. All encryption and decryption happens in the browser, ensuring the master password is never stored or transmitted.
+SafePass is a secure, client-side encrypted password manager built with Next.js and Firebase. It provides a seamless and secure way for users to manage their credentials. All encryption and decryption happens in the browser, meaning your master password and unencrypted data are never sent to or stored on any server.
+
+## Features
+
+- **Secure User Authentication**: Sign up and sign in using Google or a traditional email and password.
+- **Client-Side Encryption**: Your vault is secured with a master password that only you know. All your stored credentials are encrypted using AES (Advanced Encryption Standard) before being sent to the database.
+- **Real-Time Data Sync**: Credentials are saved to Firebase Realtime Database and are instantly available across all your logged-in devices.
+- **Full CRUD Functionality**: Add, view, update, and delete your passwords with an intuitive interface.
+- **Password Visibility Toggle**: Show or hide passwords for easy copying and verification.
+- **Responsive Design**: A clean, modern UI that works beautifully on both desktop and mobile devices, built with ShadCN/UI and Tailwind CSS.
+
+## Technology Stack
+
+- **Framework**: [Next.js](https://nextjs.org/) (with App Router)
+- **Backend & Database**: [Firebase](https://firebase.google.com/) (Authentication & Realtime Database)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [ShadCN/UI](https://ui.shadcn.com/)
+- **Encryption**: [crypto-js](https://www.npmjs.com/package/crypto-js) for robust AES encryption.
+- **Form Management**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/) for validation.
+- **UI State**: [React Firebase Hooks](https://github.com/CSFrequency/react-firebase-hooks) for easy integration with Firebase auth state.
 
 ## Getting Started
 
-### Prerequisites
+Follow these instructions to get a local copy of the project up and running.
 
-- Node.js (v18 or later)
-- npm or yarn
+### 1. Prerequisites
 
-### Installation & Setup
+- [Node.js](https://nodejs.org/) (version 18 or later)
+- `npm` (included with Node.js)
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <your-repository-url>
-    cd safepass-app
-    ```
+### 2. Clone the Repository
 
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
+```bash
+git clone https://github.com/your-username/safepass-app.git
+cd safepass-app
+```
 
-3.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
+### 3. Install Dependencies
 
-Open [http://localhost:9002](http://localhost:9002) with your browser to see the result.
+```bash
+npm install
+```
 
-## Key Technologies
+### 4. Set Up Firebase
 
-- **Next.js**: React framework for building the user interface.
-- **Firebase**: Handles user authentication (Sign in with Google) and data storage (Realtime Database).
-- **crypto-js**: Used for AES encryption and decryption of credentials.
-- **ShadCN/UI & Tailwind CSS**: For styling the application.
+This is the most critical step. You need to create your own Firebase project to store user data.
+
+1.  **Create a Firebase Project**: Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
+2.  **Create a Web App**: In your new project, add a new Web App (`</>`). This will give you a `firebaseConfig` object.
+3.  **Enable Authentication**:
+    *   In the Firebase Console, go to **Authentication**.
+    *   Click the **"Sign-in method"** tab.
+    *   Enable both **Email/Password** and **Google** providers.
+4.  **Configure Authorized Domains**:
+    *   Still in Authentication settings, go to the **Settings** tab.
+    *   Add `localhost` to the list of **Authorized Domains**.
+5.  **Set Up Realtime Database**:
+    *   Go to the **Realtime Database** section.
+    *   Create a new database.
+    *   Start in **Test Mode** for development. This allows reads and writes without complex security rules.
+
+### 5. Configure the Application
+
+- Open the file `src/lib/firebase.ts`.
+- Replace the existing `firebaseConfig` object with the one you received from the Firebase console in Step 4.2.
+
+### 6. Run the Development Server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:9002](http://localhost:9002) in your browser to see the result.
 
 ## How to Deploy
 
-This application is ready to be deployed to a platform like Vercel or Firebase App Hosting.
+This application is ready to be deployed to any platform that supports Next.js, such as [Vercel](https://vercel.com/) or Firebase Hosting.
 
-### Deploying to GitHub
-
-1.  **Initialize a Git repository**:
-    ```bash
-    git init -b main
-    git add .
-    git commit -m "Initial commit"
-    ```
-2.  **Create a new repository on GitHub** at [github.com/new](https://github.com/new).
-3.  **Link and push your local repository**:
-    ```bash
-    git remote add origin <your-github-repository-url>
-    git push -u origin main
-    ```
+**Important**: Before deploying, you must add your production URL (e.g., `your-app-name.vercel.app`) to the **Authorized Domains** list in your Firebase Authentication settings, just as you did for `localhost`.
