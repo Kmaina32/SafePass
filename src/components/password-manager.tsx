@@ -19,6 +19,7 @@ import { NoteList } from "./note-list";
 import { AddIdentityDialog } from "./add-identity-dialog";
 import { IdentityList } from "./identity-list";
 import { PasswordGeneratorView } from "./password-generator-view";
+import { SettingsView } from "./settings-view";
 
 type NewCredential = Omit<Credential, 'id' | 'password_encrypted'> & { password: string };
 type UpdateCredential = NewCredential & { id: string };
@@ -89,7 +90,7 @@ function EmptyState({ view }: { view: ActiveView }) {
         dashboard: { icon: LayoutGrid, title: "Dashboard", message: "Get a bird's-eye view of your vault's security and activity. This feature is coming soon!"},
         generator: { icon: RotateCw, title: "Password Generator", message: "Create strong, unique passwords for all your accounts."},
         trash: { icon: Trash2, title: "Trash", message: "Review and restore items you've recently deleted. This feature is coming soon!"},
-        settings: { icon: Settings, title: "Settings", message: "Customize your SafePass experience, including themes and security. This feature is coming soon!"},
+        settings: { icon: Settings, title: "Settings", message: "Customize your SafePass experience, including themes and security."},
     }[view];
 
     if (!content) return null;
@@ -236,6 +237,8 @@ export function PasswordManager({
             ) : <EmptyState view="security" />;
         case 'generator':
             return <PasswordGeneratorView />;
+        case 'settings':
+            return <SettingsView />;
         default:
             return <EmptyState view={activeView} />;
     }
