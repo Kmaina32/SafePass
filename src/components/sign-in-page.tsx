@@ -165,6 +165,10 @@ export function SignInPage() {
                         data-ai-hint="security abstract"
                         fill
                         className="object-cover opacity-10"
+                        onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                        }}
                     />
                 </CarouselItem>
                 ))}
