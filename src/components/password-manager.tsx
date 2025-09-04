@@ -210,21 +210,25 @@ export function PasswordManager({
             ) : <EmptyState view="payments" />;
         case 'notes':
             return secureNotes.length > 0 ? (
-                <NoteList
-                    notes={secureNotes}
-                    masterPassword={masterPassword}
-                    onUpdateSecureNote={onUpdateSecureNote}
-                    onDeleteSecureNote={onDeleteSecureNote}
-                />
+                filteredSecureNotes.length > 0 ? (
+                    <NoteList
+                        notes={filteredSecureNotes}
+                        masterPassword={masterPassword}
+                        onUpdateSecureNote={onUpdateSecureNote}
+                        onDeleteSecureNote={onDeleteSecureNote}
+                    />
+                 ) : <p className="text-center text-muted-foreground mt-16">No notes found for "{searchQuery}"</p>
             ) : <EmptyState view="notes" />;
         case 'identities':
             return identities.length > 0 ? (
-                <IdentityList
-                    identities={identities}
-                    masterPassword={masterPassword}
-                    onUpdateIdentity={onUpdateIdentity}
-                    onDeleteIdentity={onDeleteIdentity}
-                />
+                 filteredIdentities.length > 0 ? (
+                    <IdentityList
+                        identities={filteredIdentities}
+                        masterPassword={masterPassword}
+                        onUpdateIdentity={onUpdateIdentity}
+                        onDeleteIdentity={onDeleteIdentity}
+                    />
+                ) : <p className="text-center text-muted-foreground mt-16">No identities found for "{searchQuery}"</p>
             ) : <EmptyState view="identities" />;
         case 'security':
             return credentials.length > 0 ? (

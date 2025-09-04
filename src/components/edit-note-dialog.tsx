@@ -147,4 +147,3 @@ export function EditNoteDialog({ note, masterPassword, onUpdateSecureNote }: Edi
     </Dialog>
   );
 }
-
