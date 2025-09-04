@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { decrypt } from "@/lib/encryption";
 import type { SecureDocument } from "@/lib/types";
-import { Download, FileText, Trash2, Calendar, HardDrive } from "lucide-react";
+import { Download, FileText, Trash2, Calendar, HardDrive, Loader2 } from "lucide-react";
 import { auth, storage } from "@/lib/firebase";
 import { ref as storageRef, getBlob } from "firebase/storage";
 import CryptoJS from "crypto-js";
@@ -29,25 +29,45 @@ type DocumentListProps = {
   onDeleteDocument: (id: string) => void;
 };
 
+// Helper function to convert a WordArray to a Uint8Array
+function wordToByteArray(wordArray: CryptoJS.lib.WordArray) {
+    const l = wordArray.sigBytes;
+    const words = wordArray.words;
+    const result = new Uint8Array(l);
+    var i=0 /*dst*/, j=0 /*src*/;
+    while(true) {
+        // here i is a multiple of 4
+        if (i==l)
+            break;
+        var w = words[j++];
+        result[i++] = (w & 0xff000000) >>> 24;
+        if (i==l)
+            break;
+        result[i++] = (w & 0x00ff0000) >>> 16;
+        if (i==l)
+            break;
+        result[i++] = (w & 0x0000ff00) >>> 8;
+        if (i==l)
+            break;
+        result[i++] = (w & 0x000000ff);
+    }
+    return result;
+}
+
 // Function to decrypt a file
 async function decryptFile(encryptedBlob: Blob, encryptedKey: string, iv: string, masterKey: string): Promise<Blob> {
     const randomKey = decrypt(encryptedKey, masterKey);
+    if (!randomKey) throw new Error("Failed to decrypt file key.");
+    
     const encryptedData = await encryptedBlob.text();
 
     const decrypted = CryptoJS.AES.decrypt(encryptedData, CryptoJS.enc.Hex.parse(randomKey), {
         iv: CryptoJS.enc.Hex.parse(iv),
     });
+    
+    const decryptedBytes = wordToByteArray(decrypted);
 
-    const typedArray = new Uint8Array(decrypted.words.length * 4);
-    for (let i = 0; i < decrypted.words.length; i++) {
-        typedArray[i*4] = (decrypted.words[i] >> 24) & 0xff;
-        typedArray[i*4+1] = (decrypted.words[i] >> 16) & 0xff;
-        typedArray[i*4+2] = (decrypted.words[i] >> 8) & 0xff;
-        typedArray[i*4+3] = decrypted.words[i] & 0xff;
-    }
-
-    const finalTypedArray = typedArray.slice(0, decrypted.sigBytes);
-    return new Blob([finalTypedArray]);
+    return new Blob([decryptedBytes]);
 }
 
 
@@ -132,8 +152,17 @@ export function DocumentList({
                   onClick={() => handleDownload(doc)}
                   disabled={isDownloading === doc.id}
                 >
-                  <Download />
-                  {isDownloading === doc.id ? "Downloading..." : "Download"}
+                  {isDownloading === doc.id ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                       Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download />
+                      Download
+                    </>
+                  )}
                 </Button>
                 
                 <AlertDialog>

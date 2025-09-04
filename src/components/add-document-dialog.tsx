@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Upload, File as FileIcon } from "lucide-react";
+import { PlusCircle, Upload, File as FileIcon, Loader2 } from "lucide-react";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -128,7 +128,14 @@ export function AddDocumentDialog({ onAddDocument }: AddDocumentDialogProps) {
             
             <DialogFooter>
               <Button type="submit" disabled={isUploading}>
-                {isUploading ? "Uploading..." : "Upload and Encrypt"}
+                {isUploading ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                    "Upload and Encrypt"
+                )}
               </Button>
             </DialogFooter>
           </form>

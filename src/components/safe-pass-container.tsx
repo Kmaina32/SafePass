@@ -25,14 +25,24 @@ async function encryptFile(file: File): Promise<{ encryptedBlob: Blob, iv: strin
   const randomKey = CryptoJS.lib.WordArray.random(32).toString(); // 256-bit key
   const iv = CryptoJS.lib.WordArray.random(16).toString(); // 128-bit IV
   
-  const arrayBuffer = await file.arrayBuffer();
-  const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
-  const encrypted = CryptoJS.AES.encrypt(wordArray, CryptoJS.enc.Hex.parse(randomKey), {
-      iv: CryptoJS.enc.Hex.parse(iv),
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const fileWordArray = CryptoJS.lib.WordArray.create(reader.result as ArrayBuffer);
+        const encrypted = CryptoJS.AES.encrypt(fileWordArray, CryptoJS.enc.Hex.parse(randomKey), {
+            iv: CryptoJS.enc.Hex.parse(iv),
+        }).toString();
+        
+        const encryptedBlob = new Blob([encrypted], { type: 'text/plain' });
+        resolve({ encryptedBlob, iv, randomKey });
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.onerror = (error) => reject(error);
+    reader.readAsArrayBuffer(file);
   });
-  
-  const encryptedBlob = new Blob([encrypted.toString()]);
-  return { encryptedBlob, iv, randomKey };
 }
 
 export function SafePassContainer() {
