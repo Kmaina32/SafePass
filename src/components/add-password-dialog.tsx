@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,8 +23,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { PlusCircle, Sparkles, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { analyzePassword, PasswordAnalysis } from "@/ai/flows/password-strength-flow";
+import { generatePassword } from "@/lib/password-generator";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Progress } from "@/components/ui/progress";
+
 
 const formSchema = z.object({
   url: z.string().url({ message: "Please enter a valid URL." }),
@@ -37,6 +43,8 @@ type AddPasswordDialogProps = {
 
 export function AddPasswordDialog({ onAddCredential }: AddPasswordDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [analysis, setAnalysis] = useState<PasswordAnalysis | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,11 +55,44 @@ export function AddPasswordDialog({ onAddCredential }: AddPasswordDialogProps) {
     },
   });
 
+  const passwordValue = form.watch("password");
+  const debouncedPassword = useDebounce(passwordValue, 500);
+
+  useEffect(() => {
+    if (debouncedPassword) {
+      setIsAnalyzing(true);
+      analyzePassword({ password: debouncedPassword })
+        .then(setAnalysis)
+        .catch(console.error)
+        .finally(() => setIsAnalyzing(false));
+    } else {
+      setAnalysis(null);
+    }
+  }, [debouncedPassword]);
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     onAddCredential(values);
     form.reset();
+    setAnalysis(null);
     setIsOpen(false);
   }
+
+  const handleGeneratePassword = () => {
+    const newPassword = generatePassword();
+    form.setValue("password", newPassword, { shouldValidate: true });
+  };
+  
+  const getStrengthColor = () => {
+    if (!analysis) return "bg-muted";
+    switch (analysis.strength) {
+        case "Weak": return "bg-red-500";
+        case "Medium": return "bg-yellow-500";
+        case "Strong": return "bg-green-500";
+        default: return "bg-muted";
+    }
+  }
+
+  const strengthValue = analysis ? (analysis.score || 0) : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -102,13 +143,41 @@ export function AddPasswordDialog({ onAddCredential }: AddPasswordDialogProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
+                  <div className="flex items-center gap-2">
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleGeneratePassword}
+                      aria-label="Generate new password"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            
+            {(isAnalyzing || analysis) && (
+              <div className="space-y-2 text-xs">
+                <Progress value={strengthValue} className="h-2 [&>div]:bg-red-500" />
+                 {isAnalyzing ? (
+                    <p className="text-muted-foreground animate-pulse">Analyzing...</p>
+                ) : analysis && (
+                    <div className="flex items-start gap-2 text-muted-foreground">
+                        <Sparkles className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                        <p>
+                            <span className="font-bold text-foreground">{analysis.strength}:</span> {analysis.feedback}
+                        </p>
+                    </div>
+                )}
+              </div>
+            )}
+
             <DialogFooter>
               <Button type="submit">Save Password</Button>
             </DialogFooter>
@@ -118,3 +187,4 @@ export function AddPasswordDialog({ onAddCredential }: AddPasswordDialogProps) {
     </Dialog>
   );
 }
+
