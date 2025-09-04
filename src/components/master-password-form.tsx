@@ -21,28 +21,31 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, User } from "lucide-react";
 
 const formSchema = z.object({
+  username: z.string().min(3, { message: "Username must be at least 3 characters." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
 });
 
 type MasterPasswordFormProps = {
   isInitialSetup: boolean;
-  onUnlock: (password: string) => void;
+  onUnlock: (values: z.infer<typeof formSchema>) => void;
+  onSwitchMode: () => void;
   error?: string;
 };
 
-export function MasterPasswordForm({ isInitialSetup, onUnlock, error }: MasterPasswordFormProps) {
+export function MasterPasswordForm({ isInitialSetup, onUnlock, onSwitchMode, error }: MasterPasswordFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      username: "",
       password: "",
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onUnlock(values.password);
+    onUnlock(values);
   }
 
   return (
@@ -52,17 +55,30 @@ export function MasterPasswordForm({ isInitialSetup, onUnlock, error }: MasterPa
             <ShieldCheck className="h-10 w-10 text-primary" />
         </div>
         <CardTitle className="text-3xl font-bold">
-          {isInitialSetup ? "Set Your Master Password" : "Welcome Back"}
+          {isInitialSetup ? "Create Your Vault" : "Welcome Back"}
         </CardTitle>
         <CardDescription>
           {isInitialSetup
-            ? "Choose a strong master password. This password will encrypt all your data and is the only way to access it."
-            : "Enter your master password to unlock your vault."}
+            ? "Choose a username and a strong master password to create your secure vault."
+            : "Enter your username and master password to unlock your vault."}
         </CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your username" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="password"
@@ -78,9 +94,12 @@ export function MasterPasswordForm({ isInitialSetup, onUnlock, error }: MasterPa
             />
             {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex-col gap-4">
             <Button type="submit" className="w-full">
-              {isInitialSetup ? "Set Master Password" : "Unlock Vault"}
+              {isInitialSetup ? "Create Vault" : "Unlock Vault"}
+            </Button>
+            <Button variant="link" size="sm" onClick={onSwitchMode} type="button">
+                {isInitialSetup ? "Already have a vault? Log In" : "Don't have a vault? Sign Up"}
             </Button>
           </CardFooter>
         </form>

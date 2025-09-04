@@ -6,50 +6,72 @@ import { PasswordManager } from "@/components/password-manager";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useMounted } from "@/hooks/use-mounted";
 import { encrypt, decrypt } from "@/lib/encryption";
-import type { Credential } from "@/lib/types";
+import type { Credential, UserData } from "@/lib/types";
 import { Skeleton } from "./ui/skeleton";
 
-const MASTER_PASSWORD_CHECK_KEY = "safepass_check";
-const CREDENTIALS_KEY = "safepass_credentials";
+const USERS_DATA_KEY = "safepass_users_data";
 const CHECK_VALUE = "safepass_ok";
 
 export function SafePassContainer() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [masterPassword, setMasterPassword] = useState("");
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | undefined>();
-  
-  const [masterPasswordCheck, setMasterPasswordCheck] = useLocalStorage<string | null>(MASTER_PASSWORD_CHECK_KEY, null);
-  const [credentials, setCredentials] = useLocalStorage<Credential[]>(CREDENTIALS_KEY, []);
-  
+  const [isInitialSetup, setIsInitialSetup] = useState(true);
+
+  const [usersData, setUsersData] = useLocalStorage<Record<string, UserData>>(USERS_DATA_KEY, {});
+
   const isMounted = useMounted();
 
-  const handleUnlock = (password: string) => {
+  const handleUnlock = (values: { username: string; password: string }) => {
+    const { username, password } = values;
     setAuthError(undefined);
 
-    if (masterPasswordCheck) {
-      // Subsequent use: Check password
+    const userData = usersData[username];
+
+    if (isInitialSetup) {
+      // Sign up flow
+      if (userData) {
+        setAuthError("Username already exists. Please try logging in.");
+        return;
+      }
+      const newCheck = encrypt(CHECK_VALUE, password);
+      const newUser: UserData = {
+        masterPasswordCheck: newCheck,
+        credentials: [],
+      };
+      setUsersData({ ...usersData, [username]: newUser });
+      setMasterPassword(password);
+      setCurrentUser(username);
+      setIsUnlocked(true);
+    } else {
+      // Log in flow
+      if (!userData) {
+        setAuthError("Username not found. Please sign up.");
+        return;
+      }
       try {
-        const decryptedCheck = decrypt(masterPasswordCheck, password);
+        const decryptedCheck = decrypt(userData.masterPasswordCheck, password);
         if (decryptedCheck === CHECK_VALUE) {
           setMasterPassword(password);
+          setCurrentUser(username);
           setIsUnlocked(true);
         } else {
-          setAuthError("Invalid master password.");
+          setAuthError("Invalid username or master password.");
         }
       } catch (error) {
-        setAuthError("Invalid master password.");
+        setAuthError("Invalid username or master password.");
       }
-    } else {
-      // First time setup
-      const newCheck = encrypt(CHECK_VALUE, password);
-      setMasterPasswordCheck(newCheck);
-      setMasterPassword(password);
-      setIsUnlocked(true);
     }
   };
+  
+  const handleSwitchMode = () => {
+      setIsInitialSetup(!isInitialSetup);
+      setAuthError(undefined);
+  }
 
   const handleAddCredential = (values: { url: string; username: string; password: string }) => {
-    if (!masterPassword) return;
+    if (!masterPassword || !currentUser) return;
 
     const newCredential: Credential = {
       id: crypto.randomUUID(),
@@ -58,32 +80,44 @@ export function SafePassContainer() {
       password_encrypted: encrypt(values.password, masterPassword),
     };
 
-    setCredentials([...credentials, newCredential]);
+    const updatedUserData = {
+      ...usersData[currentUser],
+      credentials: [...usersData[currentUser].credentials, newCredential],
+    };
+    setUsersData({ ...usersData, [currentUser]: updatedUserData });
   };
 
   const handleDeleteCredential = (id: string) => {
-    setCredentials(credentials.filter((c) => c.id !== id));
+    if (!currentUser) return;
+    const updatedCredentials = usersData[currentUser].credentials.filter((c) => c.id !== id);
+    const updatedUserData = {
+      ...usersData[currentUser],
+      credentials: updatedCredentials,
+    };
+    setUsersData({ ...usersData, [currentUser]: updatedUserData });
   };
-  
+
   const handleLock = () => {
     setMasterPassword("");
     setIsUnlocked(false);
+    setCurrentUser(null);
     setAuthError(undefined);
-  }
+  };
 
   if (!isMounted) {
     return (
-       <div className="flex flex-col items-center justify-center w-full max-w-md">
+      <div className="flex flex-col items-center justify-center w-full max-w-md">
         <Skeleton className="h-[450px] w-full" />
       </div>
     );
   }
 
-  if (!isUnlocked) {
+  if (!isUnlocked || !currentUser) {
     return (
       <MasterPasswordForm
-        isInitialSetup={!masterPasswordCheck}
+        isInitialSetup={isInitialSetup}
         onUnlock={handleUnlock}
+        onSwitchMode={handleSwitchMode}
         error={authError}
       />
     );
@@ -91,7 +125,7 @@ export function SafePassContainer() {
 
   return (
     <PasswordManager
-      credentials={credentials}
+      credentials={usersData[currentUser]?.credentials || []}
       masterPassword={masterPassword}
       onAddCredential={handleAddCredential}
       onDeleteCredential={handleDeleteCredential}

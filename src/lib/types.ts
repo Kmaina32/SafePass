@@ -4,3 +4,8 @@ export interface Credential {
   username: string;
   password_encrypted: string;
 }
+
+export interface UserData {
+  masterPasswordCheck: string;
+  credentials: Credential[];
+}
