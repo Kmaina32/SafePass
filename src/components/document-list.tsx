@@ -83,9 +83,9 @@ export function DocumentList({
 }: DocumentListProps) {
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
-  const [question, setQuestion] = useState("");
+  const [questions, setQuestions] = useState<Record<string, string>>({});
   const [isAsking, setIsAsking] = useState<string | null>(null);
-  const [aiAnswer, setAiAnswer] = useState<DocumentQuestionAnswer | null>(null);
+  const [aiAnswers, setAiAnswers] = useState<Record<string, DocumentQuestionAnswer | null>>({});
 
 
   const handleDownload = async (doc: SecureDocument, asPdf: boolean = false) => {
@@ -127,15 +127,16 @@ export function DocumentList({
   };
 
   const handleAskQuestion = async (doc: SecureDocument) => {
+      const question = questions[doc.id];
       if (!question) return;
       setIsAsking(doc.id);
-      setAiAnswer(null);
+      setAiAnswers(prev => ({...prev, [doc.id]: null}));
       try {
         const { b64 } = decryptFileFromB64(doc.data_encrypted, doc.encryptedKey, doc.iv, masterPassword);
         const dataUri = `data:${doc.type};base64,${b64}`;
 
         const answer = await askDocument({ documentDataUri: dataUri, question });
-        setAiAnswer(answer);
+        setAiAnswers(prev => ({...prev, [doc.id]: answer}));
 
       } catch (err) {
           console.error(err);
@@ -149,6 +150,9 @@ export function DocumentList({
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {documents.map((doc) => {
         const isImage = doc.type.startsWith("image/");
+        const currentQuestion = questions[doc.id] || "";
+        const currentAnswer = aiAnswers[doc.id];
+
 
         return (
           <Card key={doc.id} className="flex flex-col transition-all hover:shadow-lg">
@@ -178,23 +182,23 @@ export function DocumentList({
                     <div className="flex gap-2">
                         <Input 
                             placeholder="Ask AI about this doc..."
-                            value={question}
-                            onChange={(e) => setQuestion(e.target.value)}
+                            value={currentQuestion}
+                            onChange={(e) => setQuestions(prev => ({...prev, [doc.id]: e.target.value}))}
                             disabled={isAsking === doc.id || doc.isLocked}
                         />
                         <Button 
                             variant="outline" size="icon"
                             onClick={() => handleAskQuestion(doc)}
-                            disabled={isAsking === doc.id || doc.isLocked || !question}
+                            disabled={isAsking === doc.id || doc.isLocked || !currentQuestion}
                         >
                              {isAsking === doc.id ? <Loader2 className="animate-spin"/> : <Sparkles />}
                         </Button>
                     </div>
-                     {aiAnswer && isAsking !== doc.id && (
+                     {currentAnswer && isAsking !== doc.id && (
                         <Alert>
                             <MessageSquare className="h-4 w-4" />
                             <AlertTitle>AI Answer</AlertTitle>
-                            <AlertDescription>{aiAnswer.answer}</AlertDescription>
+                            <AlertDescription>{currentAnswer.answer}</AlertDescription>
                         </Alert>
                     )}
                 </div>
