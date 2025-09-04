@@ -5,7 +5,7 @@
 import { AddPasswordDialog } from "@/components/add-password-dialog";
 import { PasswordList } from "@/components/password-list";
 import type { Credential, PaymentCard, SecureDocument, SecureNote, Identity } from "@/lib/types";
-import { Search, KeyRound, FileText, CreditCard, Shield, Settings, RotateCw, User, StickyNote, Trash2, LayoutGrid, BookOpen, ShieldQuestion } from "lucide-react";
+import { Search, KeyRound, FileText, CreditCard, Shield, Settings, RotateCw, User, StickyNote, Trash2, LayoutGrid, BookOpen, ShieldQuestion, Sparkles } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState, useMemo } from "react";
 import { AddDocumentDialog } from "./add-document-dialog";
@@ -21,6 +21,8 @@ import { IdentityList } from "./identity-list";
 import { PasswordGeneratorView } from "./password-generator-view";
 import { SettingsView } from "./settings-view";
 import { AdminDashboard } from "./admin-dashboard";
+import { Button } from "./ui/button";
+import { AnalyzeDocDialog } from "./analyze-doc-dialog";
 
 type NewCredential = Omit<Credential, 'id' | 'password_encrypted'> & { password: string };
 type UpdateCredential = NewCredential & { id: string };
@@ -267,7 +269,12 @@ export function PasswordManager({
             ) : <div className="flex-1" />}
             <div className="ml-auto flex gap-2 sm:gap-4 items-center">
                 {activeView === 'passwords' && <AddPasswordDialog onAddCredential={onAddCredential} />}
-                {activeView === 'documents' && <AddDocumentDialog onAddDocument={onAddDocument} />}
+                {activeView === 'documents' && (
+                    <>
+                        <AnalyzeDocDialog documents={documents} masterPassword={masterPassword} />
+                        <AddDocumentDialog onAddDocument={onAddDocument} />
+                    </>
+                )}
                 {activeView === 'payments' && <AddPaymentCardDialog onAddPaymentCard={onAddPaymentCard} />}
                 {activeView === 'notes' && <AddNoteDialog onAddSecureNote={onAddSecureNote} />}
                 {activeView === 'identities' && <AddIdentityDialog onAddIdentity={onAddIdentity} />}

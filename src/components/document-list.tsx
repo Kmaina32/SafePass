@@ -18,13 +18,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { decrypt } from "@/lib/encryption";
 import type { SecureDocument } from "@/lib/types";
-import { Download, FileText, Trash2, Calendar, HardDrive, Loader2, Lock, Unlock, FileDown, Sparkles, MessageSquare } from "lucide-react";
+import { Download, FileText, Trash2, Calendar, HardDrive, Loader2, Lock, Unlock, FileDown } from "lucide-react";
 import CryptoJS from "crypto-js";
 import jsPDF from "jspdf";
-import { askDocument } from "@/ai/flows/document-qa-flow";
-import { type DocumentQuestionAnswer } from "@/ai/lib/types";
-import { Input } from "./ui/input";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+
 
 type DocumentListProps = {
   documents: SecureDocument[];
@@ -58,7 +55,7 @@ function wordToByteArray(wordArray: CryptoJS.lib.WordArray) {
 }
 
 // Function to decrypt a file from base64
-function decryptFileFromB64(encryptedData: string, encryptedKey: string, iv: string, masterKey: string): { bytes: ArrayBuffer, b64: string } {
+export function decryptFileFromB64(encryptedData: string, encryptedKey: string, iv: string, masterKey: string): { bytes: ArrayBuffer, b64: string } {
     const randomKey = decrypt(encryptedKey, masterKey);
     if (!randomKey) throw new Error("Failed to decrypt file key.");
     
@@ -83,11 +80,7 @@ export function DocumentList({
 }: DocumentListProps) {
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
-  const [questions, setQuestions] = useState<Record<string, string>>({});
-  const [isAsking, setIsAsking] = useState<string | null>(null);
-  const [aiAnswers, setAiAnswers] = useState<Record<string, DocumentQuestionAnswer | null>>({});
-
-
+  
   const handleDownload = async (doc: SecureDocument, asPdf: boolean = false) => {
     setIsDownloading(doc.id);
     try {
@@ -108,7 +101,7 @@ export function DocumentList({
             a.href = url;
             a.download = doc.name;
             document.body.appendChild(a);
-            a.click();
+a.click();
             window.URL.revokeObjectURL(url);
             a.remove();
         }
@@ -126,34 +119,12 @@ export function DocumentList({
     }
   };
 
-  const handleAskQuestion = async (doc: SecureDocument) => {
-      const question = questions[doc.id];
-      if (!question) return;
-      setIsAsking(doc.id);
-      setAiAnswers(prev => ({...prev, [doc.id]: null}));
-      try {
-        const { b64 } = decryptFileFromB64(doc.data_encrypted, doc.encryptedKey, doc.iv, masterPassword);
-        const dataUri = `data:${doc.type};base64,${b64}`;
-
-        const answer = await askDocument({ documentDataUri: dataUri, question });
-        setAiAnswers(prev => ({...prev, [doc.id]: answer}));
-
-      } catch (err) {
-          console.error(err);
-          toast({ variant: "destructive", title: "AI Error", description: "Failed to analyze document." });
-      } finally {
-          setIsAsking(null);
-      }
-  }
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {documents.map((doc) => {
         const isImage = doc.type.startsWith("image/");
-        const currentQuestion = questions[doc.id] || "";
-        const currentAnswer = aiAnswers[doc.id];
-
-
+        
         return (
           <Card key={doc.id} className="flex flex-col transition-all hover:shadow-lg">
              <CardHeader className="pb-4">
@@ -176,31 +147,6 @@ export function DocumentList({
                         <Calendar className="h-4 w-4"/>
                         <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
                      </div>
-                </div>
-                
-                <div className="space-y-2">
-                    <div className="flex gap-2">
-                        <Input 
-                            placeholder="Ask AI about this doc..."
-                            value={currentQuestion}
-                            onChange={(e) => setQuestions(prev => ({...prev, [doc.id]: e.target.value}))}
-                            disabled={isAsking === doc.id || doc.isLocked}
-                        />
-                        <Button 
-                            variant="outline" size="icon"
-                            onClick={() => handleAskQuestion(doc)}
-                            disabled={isAsking === doc.id || doc.isLocked || !currentQuestion}
-                        >
-                             {isAsking === doc.id ? <Loader2 className="animate-spin"/> : <Sparkles />}
-                        </Button>
-                    </div>
-                     {currentAnswer && isAsking !== doc.id && (
-                        <Alert>
-                            <MessageSquare className="h-4 w-4" />
-                            <AlertTitle>AI Answer</AlertTitle>
-                            <AlertDescription>{currentAnswer.answer}</AlertDescription>
-                        </Alert>
-                    )}
                 </div>
 
               <div className="flex flex-col gap-2 pt-4 border-t">

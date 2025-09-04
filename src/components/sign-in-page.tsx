@@ -121,7 +121,7 @@ export function SignInPage() {
                 <ShieldCheck className="mx-auto h-20 w-20" />
                 <h1 className="text-4xl font-bold">Unlock intelligent security. Your vault is protected with client-side encryption and enhanced with AI-powered insights.</h1>
                 <p className="text-lg text-primary-foreground/90 max-w-md mx-auto mt-2">
-                    SafePass offers unparalleled security with client-side encryption. Your data is yours alone—impenetrable, synced, and always at your fingertips.
+                    SafePass offers unparalleled security with client-side encryption. Your data is yours alone impenetrable, synced, and always at your fingertips.
                 </p>
                 <div className="hidden lg:block">
                     <Button asChild variant="link" className="text-primary-foreground/80 hover:text-primary-foreground text-md">
