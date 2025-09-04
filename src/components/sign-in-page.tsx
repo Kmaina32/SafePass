@@ -2,10 +2,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/lib/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Lock, KeyRound, Cloud } from "lucide-react";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -40,12 +40,31 @@ export function SignInPage() {
           Your secure and simple password manager.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        <ul className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex items-center gap-3">
+                <Lock className="h-5 w-5 text-primary"/>
+                <span>Securely store all your passwords in one place.</span>
+            </li>
+            <li className="flex items-center gap-3">
+                <KeyRound className="h-5 w-5 text-primary"/>
+                <span>Client-side encryption ensures only you can access your data.</span>
+            </li>
+             <li className="flex items-center gap-3">
+                <Cloud className="h-5 w-5 text-primary"/>
+                <span>Sync your passwords across all your devices seamlessly.</span>
+            </li>
+        </ul>
         <Button onClick={handleSignIn} className="w-full">
             <GoogleIcon />
             Sign in with Google
         </Button>
       </CardContent>
+      <CardFooter>
+        <p className="text-xs text-center text-muted-foreground w-full">
+            Signing in with Google will create an account for you if you're a new user.
+        </p>
+      </CardFooter>
     </Card>
   );
 }
