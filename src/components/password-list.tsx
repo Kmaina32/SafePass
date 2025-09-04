@@ -14,21 +14,25 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { decrypt } from "@/lib/encryption";
 import type { Credential } from "@/lib/types";
-import { Copy, Eye, EyeOff, Globe, Trash2, User, KeyRound } from "lucide-react";
+import { Copy, Eye, EyeOff, Globe, Trash2, User, KeyRound, Tag, Pencil, Info } from "lucide-react";
+import { EditPasswordDialog } from "./edit-password-dialog";
+import { Badge } from "./ui/badge";
 
 type PasswordListProps = {
   credentials: Credential[];
   masterPassword: string;
+  onUpdateCredential: (values: any) => void;
   onDeleteCredential: (id: string) => void;
 };
 
 export function PasswordList({
   credentials,
   masterPassword,
+  onUpdateCredential,
   onDeleteCredential,
 }: PasswordListProps) {
   const { toast } = useToast();
@@ -82,11 +86,14 @@ export function PasswordList({
 
         return (
           <Card key={credential.id} className="flex flex-col transition-all hover:shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Globe className="h-6 w-6 text-primary" />
-                <span className="truncate text-lg font-semibold">{credential.url}</span>
-              </CardTitle>
+            <CardHeader className="pb-4">
+              <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <Globe className="h-6 w-6 text-primary" />
+                    <span className="truncate text-lg font-semibold">{credential.url}</span>
+                  </div>
+                  {credential.category && <Badge variant="secondary">{credential.category}</Badge>}
+              </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-4 flex flex-col">
                 <div className="flex-grow space-y-3">
@@ -109,6 +116,12 @@ export function PasswordList({
                             {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
                     </div>
+                    {credential.notes && (
+                         <div className="flex items-start gap-3 text-sm text-muted-foreground bg-muted/50 p-2 rounded-md">
+                            <Info className="h-4 w-4 flex-shrink-0 mt-0.5"/>
+                            <p className="text-xs break-words">{credential.notes}</p>
+                         </div>
+                    )}
                 </div>
 
               <div className="flex gap-2 pt-4 border-t">
@@ -120,6 +133,12 @@ export function PasswordList({
                   <Copy />
                   Copy Password
                 </Button>
+                
+                <EditPasswordDialog 
+                    credential={credential}
+                    masterPassword={masterPassword}
+                    onUpdateCredential={onUpdateCredential}
+                />
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

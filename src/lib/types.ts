@@ -4,6 +4,8 @@ export interface Credential {
   url: string;
   username: string;
   password_encrypted: string;
+  category?: string;
+  notes?: string;
 }
 
 export interface UserData {

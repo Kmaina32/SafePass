@@ -85,15 +85,16 @@ export function SafePassContainer() {
     }
   };
 
-  const handleAddCredential = (values: { url: string; username: string; password: string }) => {
+  const handleAddCredential = (values: { url: string; username: string; password: string, category?: string, notes?: string }) => {
     if (!masterPassword || !user) return;
 
     const newCredential: Credential = {
       id: crypto.randomUUID(),
       url: values.url,
       username: values.username,
-
       password_encrypted: encrypt(values.password, masterPassword),
+      category: values.category,
+      notes: values.notes,
     };
     
     const credentials = userData?.credentials || [];
@@ -101,6 +102,27 @@ export function SafePassContainer() {
 
     set(ref(db, `users/${user.uid}/credentials`), updatedCredentials)
       .catch((error) => console.error("Failed to add credential", error));
+  };
+  
+  const handleUpdateCredential = (values: { id: string; url: string; username: string; password: string, category?: string, notes?: string }) => {
+    if (!masterPassword || !user || !userData?.credentials) return;
+
+    const updatedCredentials = userData.credentials.map(cred => {
+      if (cred.id === values.id) {
+        return {
+          ...cred,
+          url: values.url,
+          username: values.username,
+          password_encrypted: encrypt(values.password, masterPassword),
+          category: values.category,
+          notes: values.notes,
+        };
+      }
+      return cred;
+    });
+
+    set(ref(db, `users/${user.uid}/credentials`), updatedCredentials)
+      .catch((error) => console.error("Failed to update credential", error));
   };
 
   const handleDeleteCredential = (id: string) => {
@@ -144,6 +166,7 @@ export function SafePassContainer() {
       credentials={userData?.credentials || []}
       masterPassword={masterPassword}
       onAddCredential={handleAddCredential}
+      onUpdateCredential={handleUpdateCredential}
       onDeleteCredential={handleDeleteCredential}
       onLock={handleLock}
     />

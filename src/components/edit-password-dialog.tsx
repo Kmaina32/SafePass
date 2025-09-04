@@ -23,47 +23,78 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Sparkles, RefreshCw } from "lucide-react";
+import { Pencil, Sparkles, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { analyzePassword, PasswordAnalysis } from "@/ai/flows/password-strength-flow";
 import { generatePassword } from "@/lib/password-generator";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Progress } from "@/components/ui/progress";
+import { Credential } from "@/lib/types";
+import { decrypt } from "@/lib/encryption";
 import { Textarea } from "./ui/textarea";
 
 const formSchema = z.object({
+  id: z.string(),
   url: z.string().url({ message: "Please enter a valid URL." }),
   username: z.string().min(1, { message: "Username cannot be empty." }),
-  password: z.string().min(1, { message: "Password cannot be empty." }),
+  password: z.string().min(1, { message: "This field cannot be empty." }),
   category: z.string().optional(),
   notes: z.string().optional(),
 });
 
-type AddPasswordDialogProps = {
-  onAddCredential: (values: z.infer<typeof formSchema>) => void;
+type EditPasswordDialogProps = {
+  credential: Credential;
+  masterPassword: string;
+  onUpdateCredential: (values: z.infer<typeof formSchema>) => void;
 };
 
-export function AddPasswordDialog({ onAddCredential }: AddPasswordDialogProps) {
+export function EditPasswordDialog({ credential, masterPassword, onUpdateCredential }: EditPasswordDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [analysis, setAnalysis] = useState<PasswordAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [decryptedPassword, setDecryptedPassword] = useState("");
+
+  useEffect(() => {
+    if (isOpen && credential) {
+      try {
+        const pass = decrypt(credential.password_encrypted, masterPassword);
+        setDecryptedPassword(pass);
+      } catch (e) {
+        console.error("Failed to decrypt password for editing.");
+        setDecryptedPassword("DECRYPTION_FAILED");
+      }
+    }
+  }, [isOpen, credential, masterPassword]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      url: "",
-      username: "",
-      password: "",
-      category: "",
-      notes: "",
-    },
+    values: {
+      id: credential.id,
+      url: credential.url,
+      username: credential.username,
+      password: decryptedPassword,
+      category: credential.category || "",
+      notes: credential.notes || "",
+    }
   });
+
+  useEffect(() => {
+    form.reset({
+        id: credential.id,
+        url: credential.url,
+        username: credential.username,
+        password: decryptedPassword,
+        category: credential.category || "",
+        notes: credential.notes || "",
+    })
+  }, [credential, decryptedPassword, form])
+
 
   const passwordValue = form.watch("password");
   const debouncedPassword = useDebounce(passwordValue, 500);
 
   useEffect(() => {
-    if (debouncedPassword) {
+    if (debouncedPassword && debouncedPassword !== "DECRYPTION_FAILED") {
       setIsAnalyzing(true);
       analyzePassword({ password: debouncedPassword })
         .then(setAnalysis)
@@ -75,10 +106,9 @@ export function AddPasswordDialog({ onAddCredential }: AddPasswordDialogProps) {
   }, [debouncedPassword]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onAddCredential(values);
-    form.reset();
-    setAnalysis(null);
+    onUpdateCredential(values);
     setIsOpen(false);
+    setAnalysis(null);
   }
 
   const handleGeneratePassword = () => {
@@ -86,31 +116,20 @@ export function AddPasswordDialog({ onAddCredential }: AddPasswordDialogProps) {
     form.setValue("password", newPassword, { shouldValidate: true });
   };
   
-  const getStrengthColor = () => {
-    if (!analysis) return "bg-muted";
-    switch (analysis.strength) {
-        case "Weak": return "bg-red-500";
-        case "Medium": return "bg-yellow-500";
-        case "Strong": return "bg-green-500";
-        default: return "bg-muted";
-    }
-  }
-
   const strengthValue = analysis ? (analysis.score || 0) : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <PlusCircle />
-          Add New Password
+        <Button variant="outline" size="icon" aria-label="Edit password">
+            <Pencil className="w-4 h-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Password</DialogTitle>
+          <DialogTitle>Edit Password</DialogTitle>
           <DialogDescription>
-            Enter the details for the new password you want to save.
+            Update the details for this password.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -147,7 +166,7 @@ export function AddPasswordDialog({ onAddCredential }: AddPasswordDialogProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
-                  <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-2">
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
@@ -208,7 +227,7 @@ export function AddPasswordDialog({ onAddCredential }: AddPasswordDialogProps) {
               )}
             />
             <DialogFooter>
-              <Button type="submit">Save Password</Button>
+              <Button type="submit">Save Changes</Button>
             </DialogFooter>
           </form>
         </Form>
