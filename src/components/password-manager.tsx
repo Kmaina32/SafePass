@@ -4,7 +4,7 @@
 import { AddPasswordDialog } from "@/components/add-password-dialog";
 import { PasswordList } from "@/components/password-list";
 import type { Credential, PaymentCard } from "@/lib/types";
-import { Search, KeyRound, FileText, CreditCard, Shield } from "lucide-react";
+import { Search, KeyRound, FileText, CreditCard, Shield, Settings, RotateCw, User, StickyNote, Trash2, LayoutGrid } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState, useMemo } from "react";
 import { AddDocumentDialog } from "./add-document-dialog";
@@ -65,7 +65,13 @@ function EmptyState({ view }: { view: ActiveView }) {
             icon: Shield,
             title: "No passwords to analyze.",
             message: "Add some passwords to check your security health.",
-        }
+        },
+        dashboard: { icon: LayoutGrid, title: "Dashboard coming soon!", message: "Get a bird's-eye view of your vault's security and activity."},
+        identities: { icon: User, title: "Identities coming soon!", message: "Store personal information like addresses and passport details."},
+        notes: { icon: StickyNote, title: "Secure Notes coming soon!", message: "Keep sensitive notes and thoughts encrypted and safe."},
+        generator: { icon: RotateCw, title: "Password Generator coming soon!", message: "Create strong, unique passwords for all your accounts."},
+        trash: { icon: Trash2, title: "Trash coming soon!", message: "Review and restore items you've recently deleted."},
+        settings: { icon: Settings, title: "Settings coming soon!", message: "Customize your SafePass experience, including themes and security."},
     }[view];
 
     if (!content) return null;
@@ -166,7 +172,7 @@ export function PasswordManager({
                 <SecurityHealth credentials={credentials} masterPassword={masterPassword} />
             ) : <EmptyState view="security" />;
         default:
-            return <div className="text-center text-muted-foreground mt-16">Coming soon!</div>;
+            return <EmptyState view={activeView} />;
     }
   }
   

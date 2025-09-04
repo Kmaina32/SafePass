@@ -44,7 +44,6 @@ function SidebarNav({ activeView, onNavigate }: { activeView: ActiveView, onNavi
                     variant={activeView === item.view ? 'secondary' : 'ghost'}
                     className="justify-start gap-3"
                     onClick={() => onNavigate(item.view)}
-                    disabled={!functionalViews.includes(item.view)}
                 >
                     <item.icon />
                     {item.label}
