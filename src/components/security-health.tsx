@@ -7,7 +7,8 @@ import { decrypt } from '@/lib/encryption';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
-import { PasswordAnalysis, analyzePassword } from '@/ai/flows/password-strength-flow';
+import { analyzePassword } from '@/ai/flows/password-strength-flow';
+import { type PasswordAnalysis } from '@/ai/lib/types';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 

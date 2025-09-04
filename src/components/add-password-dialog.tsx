@@ -25,7 +25,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { PlusCircle, Sparkles, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
-import { analyzePassword, PasswordAnalysis } from "@/ai/flows/password-strength-flow";
+import { analyzePassword } from "@/ai/flows/password-strength-flow";
+import { type PasswordAnalysis } from "@/ai/lib/types";
 import { generatePassword } from "@/lib/password-generator";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Progress } from "@/components/ui/progress";

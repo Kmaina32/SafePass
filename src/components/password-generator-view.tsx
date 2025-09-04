@@ -12,7 +12,8 @@ import { RefreshCw, Copy, Sparkles, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generatePassword } from '@/lib/password-generator';
 import { useDebounce } from '@/hooks/use-debounce';
-import { PasswordAnalysis, analyzePassword } from '@/ai/flows/password-strength-flow';
+import { analyzePassword } from '@/ai/flows/password-strength-flow';
+import { type PasswordAnalysis } from '@/ai/lib/types';
 import { Progress } from './ui/progress';
 
 export function PasswordGeneratorView() {

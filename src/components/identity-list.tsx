@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -17,9 +16,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { decrypt } from "@/lib/encryption";
 import type { Identity } from "@/lib/types";
-import { Trash2, User, Eye, EyeOff, Info, Copy } from "lucide-react";
+import { Trash2, User, Eye, EyeOff, Info, Copy, Sparkles, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { EditIdentityDialog } from "./edit-identity-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { checkIdentity } from "@/ai/flows/identity-check-flow";
+import { type IdentityCheckResult } from "@/ai/lib/types";
+import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 
 type IdentityListProps = {
   identities: Identity[];
@@ -35,6 +37,8 @@ export function IdentityList({
   onDeleteIdentity,
 }: IdentityListProps) {
   const [visibleIdentityId, setVisibleIdentityId] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState<string | null>(null);
+  const [checkResult, setCheckResult] = useState<IdentityCheckResult | null>(null);
   const { toast } = useToast();
 
   const handleCopy = async (value: string, fieldName: string) => {
@@ -49,7 +53,32 @@ export function IdentityList({
 
   const toggleVisibility = (id: string) => {
     setVisibleIdentityId(visibleIdentityId === id ? null : id);
+    setCheckResult(null); // Clear previous results
   };
+
+  const handleCheckIdentity = async (identity: Identity) => {
+    setIsChecking(identity.id);
+    setCheckResult(null);
+    try {
+        const decrypted: Partial<Identity> = {};
+        for (const key in identity) {
+            if (key.endsWith('_encrypted')) {
+                const value = (identity as any)[key];
+                if (value) {
+                    decrypted[key as keyof Identity] = decrypt(value, masterPassword);
+                }
+            }
+        }
+        const result = await checkIdentity({ identityJson: JSON.stringify(decrypted) });
+        setCheckResult(result);
+
+    } catch (e) {
+        console.error(e);
+        toast({ variant: "destructive", title: "AI Error", description: "Failed to check identity health." });
+    } finally {
+        setIsChecking(null);
+    }
+  }
   
   return (
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
@@ -98,39 +127,72 @@ export function IdentityList({
                     )}
                 </div>
 
-              <div className="flex gap-2 pt-4 border-t">
-                <Button className="w-full" onClick={() => toggleVisibility(identity.id)}>
-                  {isVisible ? <EyeOff /> : <Eye />}
-                  {isVisible ? "Hide Details" : "Show Details"}
-                </Button>
-                
-                <EditIdentityDialog 
-                    identity={identity}
-                    masterPassword={masterPassword}
-                    onUpdateIdentity={onUpdateIdentity}
-                />
-                
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="icon" aria-label="Delete identity">
-                        <Trash2 className="text-destructive" />
+                {checkResult && isChecking !== identity.id && (
+                    <div className="space-y-2 pt-2 border-t">
+                        <h4 className="font-medium text-sm">AI Data Health Check: <span className="font-bold">{checkResult.overallHealth}</span></h4>
+                        {checkResult.issues.length > 0 ? (
+                            checkResult.issues.map((issue, index) => (
+                                <Alert key={index} variant={checkResult.overallHealth === 'Poor' ? 'destructive' : 'default'}>
+                                    <AlertTriangle className="h-4 w-4"/>
+                                    <AlertTitle>{issue.field}</AlertTitle>
+                                    <AlertDescription>{issue.issue} - <em>{issue.suggestion}</em></AlertDescription>
+                                </Alert>
+                            ))
+                        ) : (
+                            <Alert variant="default" className="border-green-500/50">
+                                <CheckCircle className="h-4 w-4 text-green-500"/>
+                                <AlertTitle>No Issues Found</AlertTitle>
+                                <AlertDescription>The identity data appears to be complete and well-formatted.</AlertDescription>
+                            </Alert>
+                        )}
+                    </div>
+                )}
+
+              <div className="flex flex-col gap-2 pt-4 border-t">
+                <div className="flex gap-2">
+                    <Button className="w-full" onClick={() => toggleVisibility(identity.id)}>
+                        {isVisible ? <EyeOff /> : <Eye />}
+                        {isVisible ? "Hide Details" : "Show Details"}
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently delete this identity.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDeleteIdentity(identity.id)} className="bg-destructive hover:bg-destructive/90">
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                    <Button
+                        variant="outline"
+                        onClick={() => handleCheckIdentity(identity)}
+                        disabled={isChecking === identity.id}
+                        className="w-full"
+                    >
+                        {isChecking === identity.id ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                        AI Check
+                    </Button>
+                </div>
+                <div className="flex gap-2">
+                    <EditIdentityDialog 
+                        identity={identity}
+                        masterPassword={masterPassword}
+                        onUpdateIdentity={onUpdateIdentity}
+                    />
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="icon" aria-label="Delete identity" className="flex-1">
+                            <Trash2 className="text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete this identity.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => onDeleteIdentity(identity.id)} className="bg-destructive hover:bg-destructive/90">
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                </div>
               </div>
             </CardContent>
           </Card>

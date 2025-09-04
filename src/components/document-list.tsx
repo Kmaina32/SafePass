@@ -18,9 +18,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { decrypt } from "@/lib/encryption";
 import type { SecureDocument } from "@/lib/types";
-import { Download, FileText, Trash2, Calendar, HardDrive, Loader2, Lock, Unlock, FileDown } from "lucide-react";
+import { Download, FileText, Trash2, Calendar, HardDrive, Loader2, Lock, Unlock, FileDown, Sparkles, MessageSquare } from "lucide-react";
 import CryptoJS from "crypto-js";
 import jsPDF from "jspdf";
+import { askDocument } from "@/ai/flows/document-qa-flow";
+import { type DocumentQuestionAnswer } from "@/ai/lib/types";
+import { Textarea } from "./ui/textarea";
+import { Input } from "./ui/input";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 type DocumentListProps = {
   documents: SecureDocument[];
@@ -79,6 +84,10 @@ export function DocumentList({
 }: DocumentListProps) {
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [question, setQuestion] = useState("");
+  const [isAsking, setIsAsking] = useState<string | null>(null);
+  const [aiAnswer, setAiAnswer] = useState<DocumentQuestionAnswer | null>(null);
+
 
   const handleDownload = async (doc: SecureDocument, asPdf: boolean = false) => {
     setIsDownloading(doc.id);
@@ -118,6 +127,25 @@ export function DocumentList({
     }
   };
 
+  const handleAskQuestion = async (doc: SecureDocument) => {
+      if (!question) return;
+      setIsAsking(doc.id);
+      setAiAnswer(null);
+      try {
+        const { b64 } = decryptFileFromB64(doc.data_encrypted, doc.encryptedKey, doc.iv, masterPassword);
+        const dataUri = `data:${doc.type};base64,${b64}`;
+
+        const answer = await askDocument({ documentDataUri: dataUri, question });
+        setAiAnswer(answer);
+
+      } catch (err) {
+          console.error(err);
+          toast({ variant: "destructive", title: "AI Error", description: "Failed to analyze document." });
+      } finally {
+          setIsAsking(null);
+      }
+  }
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {documents.map((doc) => {
@@ -145,6 +173,31 @@ export function DocumentList({
                         <Calendar className="h-4 w-4"/>
                         <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
                      </div>
+                </div>
+                
+                <div className="space-y-2">
+                    <div className="flex gap-2">
+                        <Input 
+                            placeholder="Ask AI about this doc..."
+                            value={question}
+                            onChange={(e) => setQuestion(e.target.value)}
+                            disabled={isAsking === doc.id || doc.isLocked}
+                        />
+                        <Button 
+                            variant="outline" size="icon"
+                            onClick={() => handleAskQuestion(doc)}
+                            disabled={isAsking === doc.id || doc.isLocked || !question}
+                        >
+                             {isAsking === doc.id ? <Loader2 className="animate-spin"/> : <Sparkles />}
+                        </Button>
+                    </div>
+                     {aiAnswer && isAsking !== doc.id && (
+                        <Alert>
+                            <MessageSquare className="h-4 w-4" />
+                            <AlertTitle>AI Answer</AlertTitle>
+                            <AlertDescription>{aiAnswer.answer}</AlertDescription>
+                        </Alert>
+                    )}
                 </div>
 
               <div className="flex flex-col gap-2 pt-4 border-t">

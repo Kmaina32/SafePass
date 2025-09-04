@@ -4,24 +4,11 @@
  * @fileOverview An AI flow for analyzing password strength.
  *
  * - analyzePassword - A function that analyzes a password and provides feedback.
- * - PasswordStrengthInput - The input type for the analyzePassword function.
- * - PasswordAnalysis - The return type for the analyzePassword function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { PasswordStrengthInputSchema, PasswordAnalysisSchema, type PasswordStrengthInput, type PasswordAnalysis } from '@/ai/lib/types';
 
-const PasswordStrengthInputSchema = z.object({
-  password: z.string().describe('The password to analyze.'),
-});
-export type PasswordStrengthInput = z.infer<typeof PasswordStrengthInputSchema>;
-
-const PasswordAnalysisSchema = z.object({
-  strength: z.enum(['Weak', 'Medium', 'Strong']).describe('The overall strength of the password.'),
-  feedback: z.string().describe('Specific feedback and suggestions for improving the password.'),
-  score: z.number().min(0).max(100).describe('A score from 0 to 100 representing the password strength.'),
-});
-export type PasswordAnalysis = z.infer<typeof PasswordAnalysisSchema>;
 
 export async function analyzePassword(input: PasswordStrengthInput): Promise<PasswordAnalysis> {
   return passwordStrengthFlow(input);
