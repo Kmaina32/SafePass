@@ -32,8 +32,8 @@ Follow these instructions to get a local copy of the project up and running.
 ### 2. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/safepass-app.git
-cd safepass-app
+git clone https://github.com/Kmaina32/SafePass.git
+cd SafePass
 ```
 
 ### 3. Install Dependencies
@@ -78,3 +78,7 @@ Open [http://localhost:9002](http://localhost:9002) in your browser to see the r
 This application is ready to be deployed to any platform that supports Next.js, such as [Vercel](https://vercel.com/) or Firebase Hosting.
 
 **Important**: Before deploying, you must add your production URL (e.g., `your-app-name.vercel.app`) to the **Authorized Domains** list in your Firebase Authentication settings, just as you did for `localhost`.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

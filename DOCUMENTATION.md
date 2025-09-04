@@ -175,7 +175,21 @@ This section documents my experience building this project with an AI coding ass
 
 ---
 
-## 8. References
+## 8. Version Control & Repository
+
+- **Version Control:** This project uses Git for version control.
+- **Project Repository:** The complete source code is available on GitHub. You can view it here: [https://github.com/Kmaina32/SafePass](https://github.com/Kmaina32/SafePass)
+- **Author's GitHub:** You can find more of my work on my personal GitHub profile: [https://github.com/Kmaina32](https://github.com/Kmaina32)
+
+---
+
+## 9. License
+
+This project is licensed under the MIT License. See the `LICENSE` file in the repository for the full text. This permissive license allows you to use, modify, and distribute the code freely, provided you include the original copyright notice.
+
+---
+
+## 10. References
 
 -   **Official Docs:**
     -   [Next.js Documentation](https://nextjs.org/docs)
