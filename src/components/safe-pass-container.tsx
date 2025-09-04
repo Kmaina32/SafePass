@@ -58,6 +58,27 @@ export function SafePassContainer() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Attempt to restore session on component mount
+    if (isMounted && user && userData) {
+        const storedPassword = sessionStorage.getItem(`safepass_mp_${user.uid}`);
+        if (storedPassword) {
+            try {
+                const decryptedCheck = decrypt(userData.masterPasswordCheck, storedPassword);
+                if (decryptedCheck === CHECK_VALUE) {
+                    setMasterPassword(storedPassword);
+                    setIsUnlocked(true);
+                } else {
+                    sessionStorage.removeItem(`safepass_mp_${user.uid}`);
+                }
+            } catch (error) {
+                 sessionStorage.removeItem(`safepass_mp_${user.uid}`);
+            }
+        }
+    }
+  }, [isMounted, user, userData]);
+
+
+  useEffect(() => {
     if (user) {
       const userRef = ref(db, `users/${user.uid}`);
       const unsubscribe = onValue(userRef, (snapshot) => {
@@ -85,8 +106,15 @@ export function SafePassContainer() {
 
       return () => unsubscribe();
     } else {
-      setUserData(null);
+      // Clear session when user logs out
       setIsUnlocked(false);
+      setUserData(null);
+      setMasterPassword('');
+       Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('safepass_mp_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
     }
   }, [user]);
 
@@ -122,6 +150,7 @@ export function SafePassContainer() {
         setUserData(newUser);
         setMasterPassword(password);
         setIsUnlocked(true);
+        sessionStorage.setItem(`safepass_mp_${user.uid}`, password);
       })
       .catch((error) => {
         console.error("Error setting master password:", error);
@@ -133,7 +162,7 @@ export function SafePassContainer() {
     const { password } = values;
     setAuthError(undefined);
 
-    if (!userData) {
+    if (!userData || !user) {
       setAuthError("User data not found. Please try again.");
       return;
     }
@@ -142,6 +171,7 @@ export function SafePassContainer() {
       if (decryptedCheck === CHECK_VALUE) {
         setMasterPassword(password);
         setIsUnlocked(true);
+        sessionStorage.setItem(`safepass_mp_${user.uid}`, password);
       } else {
         setAuthError("Invalid master password.");
       }
@@ -320,7 +350,7 @@ export function SafePassContainer() {
       const updatedCards = userData.paymentCards.filter((c) => c.id !== id);
       const cardRef = ref(db, `users/${user.uid}/paymentCards`);
       if (updatedCards.length > 0) {
-        set(cardRef, updatedCards)
+        set(cardRef, updatedCards);
       } else {
         remove(cardRef);
       }
@@ -417,6 +447,9 @@ export function SafePassContainer() {
     setMasterPassword("");
     setIsUnlocked(false);
     setAuthError(undefined);
+    if (user) {
+        sessionStorage.removeItem(`safepass_mp_${user.uid}`);
+    }
   };
 
   if (!isMounted || loading) {
