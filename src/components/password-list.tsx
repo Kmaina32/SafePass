@@ -66,16 +66,6 @@ export function PasswordList({
     }
   };
 
-  if (credentials.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground mt-16 flex flex-col items-center gap-4">
-        <KeyRound className="w-16 h-16" />
-        <h3 className="text-xl font-semibold">Your vault is empty.</h3>
-        <p>Click "Add New Password" to get started.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {credentials.map((credential) => {

@@ -2,39 +2,54 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Lock, LogOut, FileText, KeyRound, ShieldCheck, Menu } from "lucide-react";
-import type { User } from 'firebase/auth';
+import { Lock, LogOut, FileText, KeyRound, ShieldCheck, Menu, User, CreditCard, StickyNote, LifeBuoy, Settings, Trash2, LayoutGrid, RotateCw } from "lucide-react";
+import type { User as FirebaseUser } from 'firebase/auth';
 import { auth } from "@/lib/firebase";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
+
+type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings';
 
 type DashboardLayoutProps = {
-  user: User | null | undefined;
+  user: FirebaseUser | null | undefined;
   children: React.ReactNode;
   onLock: () => void;
-  activeView: 'passwords' | 'documents';
-  onNavigate: (view: 'passwords' | 'documents') => void;
+  activeView: ActiveView;
+  onNavigate: (view: ActiveView) => void;
 };
 
-function SidebarNav({ activeView, onNavigate }: { activeView: 'passwords' | 'documents', onNavigate: (view: 'passwords' | 'documents') => void }) {
+const navItems = [
+    { view: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
+    { view: 'passwords', label: 'Passwords', icon: KeyRound },
+    { view: 'documents', label: 'Secure Documents', icon: FileText },
+    { view: 'identities', label: 'Identities', icon: User },
+    { view: 'payments', label: 'Payment Cards', icon: CreditCard },
+    { view: 'notes', label: 'Secure Notes', icon: StickyNote },
+    { view: 'generator', label: 'Generator', icon: RotateCw },
+    { view: 'security', label: 'Security Health', icon: ShieldCheck },
+    { view: 'trash', label: 'Trash', icon: Trash2 },
+    { view: 'settings', label: 'Settings', icon: Settings },
+] as const;
+
+
+function SidebarNav({ activeView, onNavigate }: { activeView: ActiveView, onNavigate: (view: ActiveView) => void }) {
+    const functionalViews: ActiveView[] = ['passwords', 'documents'];
+
     return (
         <nav className="grid items-start px-4 text-sm font-medium">
-            <Button
-                variant={activeView === 'passwords' ? 'secondary' : 'ghost'}
-                className="justify-start gap-3"
-                onClick={() => onNavigate('passwords')}
-            >
-                <KeyRound />
-                Passwords
-            </Button>
-            <Button
-                variant={activeView === 'documents' ? 'secondary' : 'ghost'}
-                className="justify-start gap-3"
-                onClick={() => onNavigate('documents')}
-            >
-                <FileText />
-                Secure Documents
-            </Button>
+            {navItems.map(item => (
+                <Button
+                    key={item.view}
+                    variant={activeView === item.view ? 'secondary' : 'ghost'}
+                    className="justify-start gap-3"
+                    onClick={() => onNavigate(item.view)}
+                    disabled={!functionalViews.includes(item.view)}
+                >
+                    <item.icon />
+                    {item.label}
+                </Button>
+            ))}
         </nav>
     );
 }
@@ -84,16 +99,18 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="sm:max-w-xs">
-                        <nav className="grid gap-6 text-lg font-medium">
+                        <div className="flex h-[60px] items-center border-b px-6">
                             <a href="#" className="flex items-center gap-2 font-semibold text-lg">
                                 <ShieldCheck className="h-6 w-6 text-primary"/>
                                 <span>SafePass</span>
                             </a>
+                        </div>
+                        <div className="overflow-auto py-4">
                             <SidebarNav activeView={activeView} onNavigate={(view) => {
                                 onNavigate(view);
                                 setMobileMenuOpen(false);
                             }} />
-                        </nav>
+                        </div>
                     </SheetContent>
                 </Sheet>
                 <div className="flex-1">

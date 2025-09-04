@@ -46,12 +46,14 @@ async function encryptFile(file: File): Promise<{ encryptedData: string, iv: str
   });
 }
 
+type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings';
+
 export function SafePassContainer() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [masterPassword, setMasterPassword] = useState("");
   const [authError, setAuthError] = useState<string | undefined>();
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [activeView, setActiveView] = useState<'passwords' | 'documents'>('passwords');
+  const [activeView, setActiveView] = useState<ActiveView>('passwords');
 
   const [user, loading] = useAuthState(auth);
   const isMounted = useMounted();
@@ -292,7 +294,7 @@ export function SafePassContainer() {
           onAddCredential={handleAddCredential}
           onUpdateCredential={handleUpdateCredential}
           onDeleteCredential={handleDeleteCredential}
-          activeView={activeView}
+          activeView={activeView as 'passwords' | 'documents'}
           onAddDocument={handleAddDocument}
           onDeleteDocument={handleDeleteDocument}
           onToggleDocumentLock={handleToggleDocumentLock}

@@ -118,16 +118,6 @@ export function DocumentList({
     }
   };
 
-  if (documents.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground mt-16 flex flex-col items-center gap-4">
-        <FileText className="w-16 h-16" />
-        <h3 className="text-xl font-semibold">No secure documents yet.</h3>
-        <p>Click "Add New Document" to upload and encrypt a file.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {documents.map((doc) => {

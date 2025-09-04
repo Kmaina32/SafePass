@@ -4,7 +4,7 @@
 import { AddPasswordDialog } from "@/components/add-password-dialog";
 import { PasswordList } from "@/components/password-list";
 import type { Credential } from "@/lib/types";
-import { Search } from "lucide-react";
+import { Search, KeyRound, FileText } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState, useMemo } from "react";
 import { AddDocumentDialog } from "./add-document-dialog";
@@ -33,6 +33,25 @@ type PasswordManagerProps = {
   onDeleteDocument: (id: string) => void;
   onToggleDocumentLock: (id: string) => void;
 };
+
+function EmptyState({ view }: { view: 'passwords' | 'documents' }) {
+    if (view === 'passwords') {
+        return (
+            <div className="text-center text-muted-foreground mt-16 flex flex-col items-center gap-4">
+              <KeyRound className="w-16 h-16" />
+              <h3 className="text-xl font-semibold">Your password vault is empty.</h3>
+              <p>Click "Add New Password" to get started.</p>
+            </div>
+        );
+    }
+     return (
+        <div className="text-center text-muted-foreground mt-16 flex flex-col items-center gap-4">
+            <FileText className="w-16 h-16" />
+            <h3 className="text-xl font-semibold">No secure documents yet.</h3>
+            <p>Click "Add New Document" to upload and encrypt a file.</p>
+        </div>
+    );
+}
 
 export function PasswordManager({
   credentials,
@@ -70,6 +89,10 @@ export function PasswordManager({
         d.type.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [documents, searchQuery]);
+  
+  const hasContent = activeView === 'passwords' ? credentials.length > 0 : documents.length > 0;
+  const hasFilteredContent = activeView === 'passwords' ? filteredCredentials.length > 0 : filteredDocuments.length > 0;
+
 
   return (
     <div className="flex flex-col h-full">
@@ -92,20 +115,32 @@ export function PasswordManager({
             </div>
         </div>
         <div className="flex-grow pb-8">
-            {activeView === 'passwords' ? (
-                <PasswordList
-                    credentials={filteredCredentials}
-                    masterPassword={masterPassword}
-                    onUpdateCredential={onUpdateCredential}
-                    onDeleteCredential={onDeleteCredential}
-                />
-            ) : (
-                <DocumentList
-                    documents={filteredDocuments}
-                    masterPassword={masterPassword}
-                    onDeleteDocument={onDeleteDocument}
-                    onToggleDocumentLock={onToggleDocumentLock}
-                />
+            {!hasContent ? <EmptyState view={activeView} /> : (
+                <>
+                 {!hasFilteredContent && searchQuery ? (
+                     <div className="text-center text-muted-foreground mt-16">
+                        <h3 className="text-xl font-semibold">No results found for "{searchQuery}"</h3>
+                     </div>
+                 ) : (
+                    <>
+                        {activeView === 'passwords' ? (
+                            <PasswordList
+                                credentials={filteredCredentials}
+                                masterPassword={masterPassword}
+                                onUpdateCredential={onUpdateCredential}
+                                onDeleteCredential={onDeleteCredential}
+                            />
+                        ) : (
+                            <DocumentList
+                                documents={filteredDocuments}
+                                masterPassword={masterPassword}
+                                onDeleteDocument={onDeleteDocument}
+                                onToggleDocumentLock={onToggleDocumentLock}
+                            />
+                        )}
+                    </>
+                 )}
+                </>
             )}
        </div>
     </div>
