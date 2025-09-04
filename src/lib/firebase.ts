@@ -4,14 +4,13 @@ import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-  "projectId": "safepass-ckjal",
-  "appId": "1:39534961530:web:2f4ea87be4a594cdbe2cc3",
-  "storageBucket": "safepass-ckjal.firebasestorage.app",
-  "apiKey": "AIzaSyAPZ9tzScl0DIazjRBnDWVOgM6PeJi83UY",
-  "authDomain": "safepass-ckjal.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "39534961530",
-  "databaseURL": "https://safepass-ckjal-default-rtdb.firebaseio.com"
+  apiKey: "AIzaSyBSOiOcgKrFfwhh0gRGhkfVGN2N70RMTEs",
+  authDomain: "safepass-4assg.firebaseapp.com",
+  databaseURL: "https://safepass-4assg-default-rtdb.firebaseio.com",
+  projectId: "safepass-4assg",
+  storageBucket: "safepass-4assg.firebasestorage.app",
+  messagingSenderId: "71051578574",
+  appId: "1:71051578574:web:02f3159e8a3b879922149f"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
