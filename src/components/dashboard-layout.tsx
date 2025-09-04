@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings';
+export type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings';
 
 type DashboardLayoutProps = {
   user: FirebaseUser | null | undefined;
@@ -34,7 +34,7 @@ const navItems = [
 
 
 function SidebarNav({ activeView, onNavigate }: { activeView: ActiveView, onNavigate: (view: ActiveView) => void }) {
-    const functionalViews: ActiveView[] = ['passwords', 'documents'];
+    const functionalViews: ActiveView[] = ['passwords', 'documents', 'payments', 'security'];
 
     return (
         <nav className="grid items-start px-4 text-sm font-medium">
@@ -98,7 +98,7 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                             <span className="sr-only">Toggle Menu</span>
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="sm:max-w-xs">
+                    <SheetContent side="left" className="sm:max-w-xs p-0">
                         <div className="flex h-[60px] items-center border-b px-6">
                             <a href="#" className="flex items-center gap-2 font-semibold text-lg">
                                 <ShieldCheck className="h-6 w-6 text-primary"/>

@@ -20,8 +20,19 @@ export interface SecureDocument {
     isLocked?: boolean;
 }
 
+export interface PaymentCard {
+    id: string;
+    cardholderName: string;
+    cardNumber_encrypted: string;
+    expiryDate_encrypted: string;
+    cvv_encrypted: string;
+    cardType: 'visa' | 'mastercard' | 'amex' | 'discover' | 'other';
+    notes?: string;
+}
+
 export interface UserData {
   masterPasswordCheck: string;
   credentials: Credential[];
   documents: SecureDocument[];
+  paymentCards: PaymentCard[];
 }

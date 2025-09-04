@@ -6,14 +6,14 @@ import { MasterPasswordForm } from "@/components/master-password-form";
 import { PasswordManager } from "@/components/password-manager";
 import { useMounted } from "@/hooks/use-mounted";
 import { encrypt, decrypt } from "@/lib/encryption";
-import type { Credential, UserData, SecureDocument } from "@/lib/types";
+import type { Credential, UserData, SecureDocument, PaymentCard } from "@/lib/types";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { ref, onValue, set, remove } from "firebase/database";
 import { SignInPage } from "./sign-in-page";
 import { CreateMasterPasswordForm } from "./create-master-password-form";
 import { LoadingDisplay } from "./loading-display";
-import { DashboardLayout } from "./dashboard-layout";
+import { DashboardLayout, ActiveView } from "./dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import CryptoJS from "crypto-js";
 
@@ -45,8 +45,6 @@ async function encryptFile(file: File): Promise<{ encryptedData: string, iv: str
     reader.readAsArrayBuffer(file);
   });
 }
-
-type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings';
 
 export function SafePassContainer() {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -86,6 +84,7 @@ export function SafePassContainer() {
       masterPasswordCheck: newCheck,
       credentials: [],
       documents: [],
+      paymentCards: [],
     };
     set(ref(db, `users/${user.uid}`), newUser)
       .then(() => {
@@ -248,6 +247,53 @@ export function SafePassContainer() {
     }
   }
 
+  const handleAddPaymentCard = (values: Omit<PaymentCard, 'id'>) => {
+    if (!masterPassword || !user) return;
+
+    const newCard: PaymentCard = {
+        id: crypto.randomUUID(),
+        ...values,
+        cardNumber_encrypted: encrypt(values.cardNumber_encrypted, masterPassword),
+        expiryDate_encrypted: encrypt(values.expiryDate_encrypted, masterPassword),
+        cvv_encrypted: encrypt(values.cvv_encrypted, masterPassword),
+    };
+    
+    const cards = userData?.paymentCards || [];
+    const updatedCards = [...cards, newCard];
+
+    set(ref(db, `users/${user.uid}/paymentCards`), updatedCards)
+      .catch((error) => console.error("Failed to add payment card", error));
+  }
+
+  const handleUpdatePaymentCard = (values: PaymentCard) => {
+    if (!masterPassword || !user || !userData?.paymentCards) return;
+
+    const updatedCards = userData.paymentCards.map(card => {
+      if (card.id === values.id) {
+        return {
+          ...values,
+          cardNumber_encrypted: encrypt(values.cardNumber_encrypted, masterPassword),
+          expiryDate_encrypted: encrypt(values.expiryDate_encrypted, masterPassword),
+          cvv_encrypted: encrypt(values.cvv_encrypted, masterPassword),
+        };
+      }
+      return card;
+    });
+
+    set(ref(db, `users/${user.uid}/paymentCards`), updatedCards)
+      .catch((error) => console.error("Failed to update payment card", error));
+  }
+  
+  const handleDeletePaymentCard = (id: string) => {
+      if (!user || !userData?.paymentCards) return;
+      const updatedCards = userData.paymentCards.filter((c) => c.id !== id);
+      const cardRef = ref(db, `users/${user.uid}/paymentCards`);
+      if (updatedCards.length > 0) {
+        set(cardRef, updatedCards)
+      } else {
+        remove(cardRef);
+      }
+  }
 
   const handleLock = () => {
     setMasterPassword("");
@@ -290,14 +336,18 @@ export function SafePassContainer() {
       <PasswordManager
           credentials={userData?.credentials || []}
           documents={userData?.documents || []}
+          paymentCards={userData?.paymentCards || []}
           masterPassword={masterPassword}
           onAddCredential={handleAddCredential}
           onUpdateCredential={handleUpdateCredential}
           onDeleteCredential={handleDeleteCredential}
-          activeView={activeView as 'passwords' | 'documents'}
+          activeView={activeView}
           onAddDocument={handleAddDocument}
           onDeleteDocument={handleDeleteDocument}
           onToggleDocumentLock={handleToggleDocumentLock}
+          onAddPaymentCard={handleAddPaymentCard}
+          onUpdatePaymentCard={handleUpdatePaymentCard}
+          onDeletePaymentCard={handleDeletePaymentCard}
       />
     </DashboardLayout>
   );
