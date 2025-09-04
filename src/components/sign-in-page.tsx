@@ -144,7 +144,7 @@ export function SignInPage() {
             fill
             className="absolute inset-0 h-full w-full object-cover opacity-10"
         />
-        <p className="absolute bottom-4 text-xs z-10">© 2024 SafePass - A Capstone Project by George K. Maina</p>
+        <p className="absolute bottom-4 text-xs z-10">© 2025 SafePass - A Capstone Project by George K. Maina</p>
       </div>
 
       <div className="flex items-center justify-center p-6 sm:p-12 flex-col">
