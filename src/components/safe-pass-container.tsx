@@ -194,6 +194,7 @@ export function SafePassContainer() {
           iv: iv,
           size: file.size,
           createdAt: new Date().toISOString(),
+          isLocked: false,
       };
 
       // 4. Add the metadata to the Realtime Database
@@ -212,14 +213,12 @@ export function SafePassContainer() {
     if (!user || !userData?.documents) return;
     
     try {
-        // Delete metadata from RTDB
         const updatedDocs = userData.documents.filter(d => d.id !== id);
         const docRef = ref(db, `users/${user.uid}/documents`);
         
         if (updatedDocs.length > 0) {
              await set(docRef, updatedDocs);
         } else {
-            // If it's the last document, remove the entire 'documents' node
             await remove(docRef);
         }
 
@@ -227,6 +226,23 @@ export function SafePassContainer() {
     } catch (error) {
         console.error("Error deleting document:", error);
         toast({ variant: 'destructive', title: "Delete Failed", description: "Could not delete the document." });
+    }
+  }
+  
+  const handleToggleDocumentLock = async (id: string) => {
+    if (!user || !userData?.documents) return;
+    try {
+        const updatedDocs = userData.documents.map(doc => {
+            if (doc.id === id) {
+                return { ...doc, isLocked: !doc.isLocked };
+            }
+            return doc;
+        });
+        await set(ref(db, `users/${user.uid}/documents`), updatedDocs);
+        toast({ title: "Success", description: "Document state updated." });
+    } catch (error) {
+        console.error("Error toggling document lock:", error);
+        toast({ variant: 'destructive', title: "Update Failed", description: "Could not update the document state." });
     }
   }
 
@@ -279,6 +295,7 @@ export function SafePassContainer() {
           activeView={activeView}
           onAddDocument={handleAddDocument}
           onDeleteDocument={handleDeleteDocument}
+          onToggleDocumentLock={handleToggleDocumentLock}
       />
     </DashboardLayout>
   );

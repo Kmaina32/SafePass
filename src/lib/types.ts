@@ -17,6 +17,7 @@ export interface SecureDocument {
     encryptedKey: string; // The AES key, encrypted with the master password
     size: number;
     createdAt: string;
+    isLocked?: boolean;
 }
 
 export interface UserData {

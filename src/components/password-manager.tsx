@@ -31,6 +31,7 @@ type PasswordManagerProps = {
   activeView: 'passwords' | 'documents';
   onAddDocument: (file: File, name: string) => Promise<void>;
   onDeleteDocument: (id: string) => void;
+  onToggleDocumentLock: (id: string) => void;
 };
 
 export function PasswordManager({
@@ -43,6 +44,7 @@ export function PasswordManager({
   activeView,
   onAddDocument,
   onDeleteDocument,
+  onToggleDocumentLock,
 }: PasswordManagerProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -102,6 +104,7 @@ export function PasswordManager({
                     documents={filteredDocuments}
                     masterPassword={masterPassword}
                     onDeleteDocument={onDeleteDocument}
+                    onToggleDocumentLock={onToggleDocumentLock}
                 />
             )}
        </div>
