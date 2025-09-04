@@ -7,12 +7,12 @@ import { PasswordManager } from "@/components/password-manager";
 import { useMounted } from "@/hooks/use-mounted";
 import { encrypt, decrypt } from "@/lib/encryption";
 import type { Credential, UserData } from "@/lib/types";
-import { Skeleton } from "./ui/skeleton";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { ref, onValue, set } from "firebase/database";
 import { SignInPage } from "./sign-in-page";
 import { CreateMasterPasswordForm } from "./create-master-password-form";
+import { LoadingDisplay } from "./loading-display";
 
 const CHECK_VALUE = "safepass_ok";
 
@@ -117,11 +117,7 @@ export function SafePassContainer() {
   };
 
   if (!isMounted || loading) {
-    return (
-      <div className="flex flex-col items-center justify-center w-full max-w-md">
-        <Skeleton className="h-[450px] w-full" />
-      </div>
-    );
+    return <LoadingDisplay />;
   }
 
   if (!user) {
