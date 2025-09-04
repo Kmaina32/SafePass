@@ -245,31 +245,6 @@ export function AdminDashboard() {
                         <p>No active support tickets.</p>
                     </CardContent>
                 </Card>
-
-                <Card>
-                     <CardHeader>
-                        <CardTitle>Auth Page Configuration</CardTitle>
-                        <CardDescription>Manage the slideshow images on the sign-in page. Enter one URL per line.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <Label htmlFor="image-urls">Image URLs</Label>
-                            <Textarea 
-                                id="image-urls" 
-                                placeholder="https://picsum.photos/1200/1800&#10;https://picsum.photos/1200/1801&#10;https://picsum.photos/1200/1802" 
-                                value={imageUrls} 
-                                onChange={(e) => setImageUrls(e.target.value)} 
-                                disabled={isUpdatingImage}
-                                rows={5} 
-                            />
-                        </div>
-                    </CardContent>
-                     <CardFooter>
-                        <Button onClick={handleUpdateImage} disabled={isUpdatingImage}>
-                            {isUpdatingImage ? 'Updating...' : 'Update Images'}
-                        </Button>
-                    </CardFooter>
-                </Card>
             </div>
         </div>
     )
