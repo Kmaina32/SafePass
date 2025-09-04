@@ -151,29 +151,25 @@ a.click();
 
               <div className="flex flex-col gap-2 pt-4 border-t">
                 <div className="flex gap-2">
+                  <Button
+                    className="flex-1"
+                    onClick={() => handleDownload(doc)}
+                    disabled={isDownloading === doc.id || doc.isLocked}
+                  >
+                    {isDownloading === doc.id ? <Loader2 className="animate-spin" /> : <Download />}
+                    Download
+                  </Button>
+                  {isImage && (
                     <Button
-                      className="flex-1"
-                      onClick={() => handleDownload(doc)}
+                      variant="secondary"
+                      size="icon"
+                      onClick={() => handleDownload(doc, true)}
                       disabled={isDownloading === doc.id || doc.isLocked}
+                      aria-label="Save as PDF"
                     >
-                      {isDownloading === doc.id ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <Download />
-                      )}
-                      Download
+                      <FileDown />
                     </Button>
-                    {isImage && (
-                        <Button
-                            variant="secondary"
-                            className="flex-1"
-                            onClick={() => handleDownload(doc, true)}
-                            disabled={isDownloading === doc.id || doc.isLocked}
-                        >
-                            <FileDown />
-                            Save as PDF
-                        </Button>
-                    )}
+                  )}
                 </div>
                  <div className="flex gap-2">
                     <Button
