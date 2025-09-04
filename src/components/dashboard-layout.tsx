@@ -15,6 +15,7 @@ import { ref, onValue, off } from "firebase/database";
 import { Badge } from "./ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+import { SidebarProvider } from "./ui/sidebar";
 
 export type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings' | 'admin' | 'documentation';
 
@@ -134,99 +135,101 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
   const userInitial = user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'U';
 
   return (
-    <div className="flex min-h-screen w-full bg-muted/40">
-        <aside className="hidden w-64 flex-col border-r bg-background sm:flex">
-            <div className="flex h-[60px] items-center border-b px-6">
-                <a href="#" className="flex items-center gap-2 font-semibold">
-                    <ShieldCheck className="h-6 w-6 text-primary"/>
-                    <span>SafePass</span>
-                </a>
-            </div>
-            <div className="flex-1 overflow-auto py-4">
-                <SidebarNav activeView={activeView} onNavigate={onNavigate} user={user} />
-            </div>
-            <div className="mt-auto p-4 border-t space-y-4">
-                <nav className="grid items-start px-4 text-sm font-medium">
-                    <Button
-                        asChild
-                        variant={'ghost'}
-                        className="justify-start gap-3"
-                    >
-                        <Link href="/documentation">
-                            <BookOpen />
-                            Capstone Docs
-                        </Link>
-                    </Button>
-                </nav>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <Avatar className="h-10 w-10">
-                        <AvatarImage src={user?.photoURL || undefined} alt="User Avatar" />
-                        <AvatarFallback>{userInitial}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col overflow-hidden">
-                        <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
-                        <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+    <SidebarProvider>
+        <div className="flex min-h-screen w-full bg-muted/40">
+            <aside className="hidden w-64 flex-col border-r bg-background sm:flex">
+                <div className="flex h-[60px] items-center border-b px-6">
+                    <a href="#" className="flex items-center gap-2 font-semibold">
+                        <ShieldCheck className="h-6 w-6 text-primary"/>
+                        <span>SafePass</span>
+                    </a>
+                </div>
+                <div className="flex-1 overflow-auto py-4">
+                    <SidebarNav activeView={activeView} onNavigate={onNavigate} user={user} />
+                </div>
+                <div className="mt-auto p-4 border-t space-y-4">
+                    <nav className="grid items-start px-4 text-sm font-medium">
+                        <Button
+                            asChild
+                            variant={'ghost'}
+                            className="justify-start gap-3"
+                        >
+                            <Link href="/documentation">
+                                <BookOpen />
+                                Capstone Docs
+                            </Link>
+                        </Button>
+                    </nav>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <Avatar className="h-10 w-10">
+                            <AvatarImage src={user?.photoURL || undefined} alt="User Avatar" />
+                            <AvatarFallback>{userInitial}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col overflow-hidden">
+                            <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
+                            <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" size="sm" onClick={onLock}>
+                            <Lock />
+                            Lock
+                        </Button>
+                         <Button variant="outline" size="sm" onClick={() => auth.signOut()}>
+                            <LogOut />
+                            Sign Out
+                        </Button>
                     </div>
                 </div>
-                 <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm" onClick={onLock}>
-                        <Lock />
-                        Lock
-                    </Button>
-                     <Button variant="outline" size="sm" onClick={() => auth.signOut()}>
-                        <LogOut />
-                        Sign Out
-                    </Button>
-                </div>
+            </aside>
+            <div className="flex flex-1 flex-col">
+                 <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+                    <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                        <SheetTrigger asChild>
+                            <Button size="icon" variant="outline" className="sm:hidden">
+                                <Menu />
+                                <span className="sr-only">Toggle Menu</span>
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="sm:max-w-xs p-0">
+                            <div className="flex h-[60px] items-center border-b px-6">
+                                <a href="#" className="flex items-center gap-2 font-semibold text-lg">
+                                    <ShieldCheck className="h-6 w-6 text-primary"/>
+                                    <span>SafePass</span>
+                                </a>
+                            </div>
+                            <div className="overflow-auto py-4">
+                                <SidebarNav activeView={activeView} user={user} onNavigate={(view) => {
+                                    onNavigate(view);
+                                    setMobileMenuOpen(false);
+                                }} />
+                            </div>
+                             <div className="mt-auto p-4 border-t space-y-4">
+                                <nav className="grid items-start px-4 text-sm font-medium">
+                                    <Button
+                                        asChild
+                                        variant={'ghost'}
+                                        className="justify-start gap-3"
+                                    >
+                                        <Link href="/documentation" onClick={() => setMobileMenuOpen(false)}>
+                                            <BookOpen />
+                                            Capstone Docs
+                                        </Link>
+                                    </Button>
+                                </nav>
+                             </div>
+                        </SheetContent>
+                    </Sheet>
+                    <div className="flex-1" />
+                    <div className="flex items-center gap-4">
+                        <NotificationBell user={user} />
+                    </div>
+                </header>
+                <main className="flex-1 p-4 sm:px-6 sm:py-0">
+                    {children}
+                </main>
             </div>
-        </aside>
-        <div className="flex flex-1 flex-col">
-             <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                    <SheetTrigger asChild>
-                        <Button size="icon" variant="outline" className="sm:hidden">
-                            <Menu />
-                            <span className="sr-only">Toggle Menu</span>
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="sm:max-w-xs p-0">
-                        <div className="flex h-[60px] items-center border-b px-6">
-                            <a href="#" className="flex items-center gap-2 font-semibold text-lg">
-                                <ShieldCheck className="h-6 w-6 text-primary"/>
-                                <span>SafePass</span>
-                            </a>
-                        </div>
-                        <div className="overflow-auto py-4">
-                            <SidebarNav activeView={activeView} user={user} onNavigate={(view) => {
-                                onNavigate(view);
-                                setMobileMenuOpen(false);
-                            }} />
-                        </div>
-                         <div className="mt-auto p-4 border-t space-y-4">
-                            <nav className="grid items-start px-4 text-sm font-medium">
-                                <Button
-                                    asChild
-                                    variant={'ghost'}
-                                    className="justify-start gap-3"
-                                >
-                                    <Link href="/documentation" onClick={() => setMobileMenuOpen(false)}>
-                                        <BookOpen />
-                                        Capstone Docs
-                                    </Link>
-                                </Button>
-                            </nav>
-                         </div>
-                    </SheetContent>
-                </Sheet>
-                <div className="flex-1" />
-                <div className="flex items-center gap-4">
-                    <NotificationBell user={user} />
-                </div>
-            </header>
-            <main className="flex-1 p-4 sm:px-6 sm:py-0">
-                {children}
-            </main>
         </div>
-    </div>
+    </SidebarProvider>
   );
 }
