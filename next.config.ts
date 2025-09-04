@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'yourshortlist.com',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
   async headers() {
