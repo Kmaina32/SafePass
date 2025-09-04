@@ -1,47 +1,57 @@
 
+
 "use client";
 
 import { AddPasswordDialog } from "@/components/add-password-dialog";
 import { PasswordList } from "@/components/password-list";
-import type { Credential, PaymentCard } from "@/lib/types";
+import type { Credential, PaymentCard, SecureDocument, SecureNote, Identity } from "@/lib/types";
 import { Search, KeyRound, FileText, CreditCard, Shield, Settings, RotateCw, User, StickyNote, Trash2, LayoutGrid } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState, useMemo } from "react";
 import { AddDocumentDialog } from "./add-document-dialog";
-import type { SecureDocument } from "@/lib/types";
 import { DocumentList } from "./document-list";
 import { ActiveView } from "./dashboard-layout";
 import { AddPaymentCardDialog } from "./add-payment-card-dialog";
 import { PaymentCardList } from "./payment-card-list";
 import { SecurityHealth } from "./security-health";
+import { AddNoteDialog } from "./add-note-dialog";
+import { NoteList } from "./note-list";
+import { AddIdentityDialog } from "./add-identity-dialog";
+import { IdentityList } from "./identity-list";
+import { PasswordGeneratorView } from "./password-generator-view";
 
-type NewCredential = {
-    url: string;
-    username: string;
-    password: string;
-    category?: string;
-    notes?: string;
-}
-
+type NewCredential = Omit<Credential, 'id' | 'password_encrypted'> & { password: string };
 type UpdateCredential = NewCredential & { id: string };
 type NewPaymentCard = Omit<PaymentCard, 'id'>;
+type NewSecureNote = Omit<SecureNote, 'id' | 'title_encrypted' | 'content_encrypted' | 'createdAt'> & { title: string, content: string };
+type UpdateSecureNote = NewSecureNote & { id: string };
+type NewIdentity = Omit<Identity, 'id'>;
+type UpdateIdentity = Identity;
 
 
 type PasswordManagerProps = {
   credentials: Credential[];
   documents: SecureDocument[];
   paymentCards: PaymentCard[];
+  secureNotes: SecureNote[];
+  identities: Identity[];
   masterPassword: string;
+  activeView: ActiveView;
   onAddCredential: (values: NewCredential) => void;
   onUpdateCredential: (values: UpdateCredential) => void;
   onDeleteCredential: (id: string) => void;
-  activeView: ActiveView;
   onAddDocument: (file: File, name: string) => Promise<void>;
   onDeleteDocument: (id: string) => void;
   onToggleDocumentLock: (id: string) => void;
   onAddPaymentCard: (values: NewPaymentCard) => void;
   onUpdatePaymentCard: (values: PaymentCard) => void;
   onDeletePaymentCard: (id: string) => void;
+  onAddSecureNote: (values: NewSecureNote) => void;
+  onUpdateSecureNote: (values: UpdateSecureNote) => void;
+  onDeleteSecureNote: (id: string) => void;
+  onAddIdentity: (values: NewIdentity) => void;
+  onUpdateIdentity: (values: UpdateIdentity) => void;
+  onDeleteIdentity: (id: string) => void;
 };
 
 function EmptyState({ view }: { view: ActiveView }) {
@@ -61,17 +71,25 @@ function EmptyState({ view }: { view: ActiveView }) {
             title: "No payment cards saved.",
             message: "Click \"Add New Card\" to save card details securely.",
         },
+        notes: {
+            icon: StickyNote,
+            title: "No secure notes yet.",
+            message: "Click \"Add New Note\" to save an encrypted note."
+        },
+        identities: {
+            icon: User,
+            title: "No identities saved.",
+            message: "Click \"Add New Identity\" to save personal information."
+        },
         security: {
             icon: Shield,
             title: "No passwords to analyze.",
             message: "Add some passwords to check your security health.",
         },
-        dashboard: { icon: LayoutGrid, title: "Dashboard coming soon!", message: "Get a bird's-eye view of your vault's security and activity."},
-        identities: { icon: User, title: "Identities coming soon!", message: "Store personal information like addresses and passport details."},
-        notes: { icon: StickyNote, title: "Secure Notes coming soon!", message: "Keep sensitive notes and thoughts encrypted and safe."},
-        generator: { icon: RotateCw, title: "Password Generator coming soon!", message: "Create strong, unique passwords for all your accounts."},
-        trash: { icon: Trash2, title: "Trash coming soon!", message: "Review and restore items you've recently deleted."},
-        settings: { icon: Settings, title: "Settings coming soon!", message: "Customize your SafePass experience, including themes and security."},
+        dashboard: { icon: LayoutGrid, title: "Dashboard", message: "Get a bird's-eye view of your vault's security and activity. This feature is coming soon!"},
+        generator: { icon: RotateCw, title: "Password Generator", message: "Create strong, unique passwords for all your accounts."},
+        trash: { icon: Trash2, title: "Trash", message: "Review and restore items you've recently deleted. This feature is coming soon!"},
+        settings: { icon: Settings, title: "Settings", message: "Customize your SafePass experience, including themes and security. This feature is coming soon!"},
     }[view];
 
     if (!content) return null;
@@ -90,17 +108,25 @@ export function PasswordManager({
   credentials,
   documents,
   paymentCards,
+  secureNotes,
+  identities,
   masterPassword,
+  activeView,
   onAddCredential,
   onUpdateCredential,
   onDeleteCredential,
-  activeView,
   onAddDocument,
   onDeleteDocument,
   onToggleDocumentLock,
   onAddPaymentCard,
   onUpdatePaymentCard,
   onDeletePaymentCard,
+  onAddSecureNote,
+  onUpdateSecureNote,
+  onDeleteSecureNote,
+  onAddIdentity,
+  onUpdateIdentity,
+  onDeleteIdentity,
 }: PasswordManagerProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -132,6 +158,21 @@ export function PasswordManager({
     );
   }, [paymentCards, searchQuery]);
   
+  const filteredSecureNotes = useMemo(() => {
+    if (!searchQuery) return secureNotes;
+    // We can't search encrypted content, so we will filter on category if it exists
+    return secureNotes.filter(
+      (n) => n.category?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [secureNotes, searchQuery]);
+
+  const filteredIdentities = useMemo(() => {
+      if (!searchQuery) return identities;
+      return identities.filter(i => 
+        i.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+  }, [identities, searchQuery]);
+
   const renderContent = () => {
     switch (activeView) {
         case 'passwords':
@@ -167,17 +208,37 @@ export function PasswordManager({
                     />
                 ) : <p className="text-center text-muted-foreground mt-16">No cards found for "{searchQuery}"</p>
             ) : <EmptyState view="payments" />;
+        case 'notes':
+            return secureNotes.length > 0 ? (
+                <NoteList
+                    notes={secureNotes}
+                    masterPassword={masterPassword}
+                    onUpdateSecureNote={onUpdateSecureNote}
+                    onDeleteSecureNote={onDeleteSecureNote}
+                />
+            ) : <EmptyState view="notes" />;
+        case 'identities':
+            return identities.length > 0 ? (
+                <IdentityList
+                    identities={identities}
+                    masterPassword={masterPassword}
+                    onUpdateIdentity={onUpdateIdentity}
+                    onDeleteIdentity={onDeleteIdentity}
+                />
+            ) : <EmptyState view="identities" />;
         case 'security':
             return credentials.length > 0 ? (
                 <SecurityHealth credentials={credentials} masterPassword={masterPassword} />
             ) : <EmptyState view="security" />;
+        case 'generator':
+            return <PasswordGeneratorView />;
         default:
             return <EmptyState view={activeView} />;
     }
   }
   
   const renderHeaderActions = () => {
-     const showSearch = ['passwords', 'documents', 'payments'].includes(activeView);
+     const showSearch = ['passwords', 'documents', 'payments', 'notes', 'identities'].includes(activeView);
      
      return (
         <div className="flex items-center gap-4 py-4">
@@ -196,6 +257,8 @@ export function PasswordManager({
                 {activeView === 'passwords' && <AddPasswordDialog onAddCredential={onAddCredential} />}
                 {activeView === 'documents' && <AddDocumentDialog onAddDocument={onAddDocument} />}
                 {activeView === 'payments' && <AddPaymentCardDialog onAddPaymentCard={onAddPaymentCard} />}
+                {activeView === 'notes' && <AddNoteDialog onAddSecureNote={onAddSecureNote} />}
+                {activeView === 'identities' && <AddIdentityDialog onAddIdentity={onAddIdentity} />}
             </div>
         </div>
      );

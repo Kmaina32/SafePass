@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,7 +7,7 @@ import { MasterPasswordForm } from "@/components/master-password-form";
 import { PasswordManager } from "@/components/password-manager";
 import { useMounted } from "@/hooks/use-mounted";
 import { encrypt, decrypt } from "@/lib/encryption";
-import type { Credential, UserData, SecureDocument, PaymentCard } from "@/lib/types";
+import type { Credential, UserData, SecureDocument, PaymentCard, SecureNote, Identity } from "@/lib/types";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { ref, onValue, set, remove } from "firebase/database";
@@ -85,6 +86,8 @@ export function SafePassContainer() {
       credentials: [],
       documents: [],
       paymentCards: [],
+      secureNotes: [],
+      identities: [],
     };
     set(ref(db, `users/${user.uid}`), newUser)
       .then(() => {
@@ -294,6 +297,93 @@ export function SafePassContainer() {
         remove(cardRef);
       }
   }
+  
+  const handleAddSecureNote = (values: { title: string; content: string; category?: string }) => {
+    if (!masterPassword || !user) return;
+    const newNote: SecureNote = {
+      id: crypto.randomUUID(),
+      title_encrypted: encrypt(values.title, masterPassword),
+      content_encrypted: encrypt(values.content, masterPassword),
+      createdAt: new Date().toISOString(),
+      category: values.category,
+    };
+    const notes = userData?.secureNotes || [];
+    set(ref(db, `users/${user.uid}/secureNotes`), [...notes, newNote]);
+  };
+
+  const handleUpdateSecureNote = (values: { id: string; title: string; content: string; category?: string }) => {
+    if (!masterPassword || !user || !userData?.secureNotes) return;
+    const updatedNotes = userData.secureNotes.map(note =>
+      note.id === values.id
+        ? {
+            ...note,
+            title_encrypted: encrypt(values.title, masterPassword),
+            content_encrypted: encrypt(values.content, masterPassword),
+            category: values.category,
+          }
+        : note
+    );
+    set(ref(db, `users/${user.uid}/secureNotes`), updatedNotes);
+  };
+  
+  const handleDeleteSecureNote = (id: string) => {
+    if (!user || !userData?.secureNotes) return;
+    const updatedNotes = userData.secureNotes.filter(note => note.id !== id);
+    const noteRef = ref(db, `users/${user.uid}/secureNotes`);
+    if (updatedNotes.length > 0) {
+        set(noteRef, updatedNotes);
+    } else {
+        remove(noteRef);
+    }
+  };
+
+  const handleAddIdentity = (values: Omit<Identity, 'id'>) => {
+    if (!masterPassword || !user) return;
+    const identities = userData?.identities || [];
+    const newIdentity = { ...values, id: crypto.randomUUID() };
+
+    // Encrypt all fields that need it
+    for (const key in newIdentity) {
+      if (key.endsWith('_encrypted')) {
+        const value = (newIdentity as any)[key];
+        if (value) {
+            (newIdentity as any)[key] = encrypt(value, masterPassword);
+        }
+      }
+    }
+    set(ref(db, `users/${user.uid}/identities`), [...identities, newIdentity]);
+  };
+  
+  const handleUpdateIdentity = (values: Identity) => {
+    if (!masterPassword || !user || !userData?.identities) return;
+    const updatedIdentities = userData.identities.map(identity => {
+      if (identity.id === values.id) {
+        const updatedIdentity = { ...values };
+        for (const key in updatedIdentity) {
+          if (key.endsWith('_encrypted')) {
+            const value = (updatedIdentity as any)[key];
+             if (value) {
+                (updatedIdentity as any)[key] = encrypt(value, masterPassword);
+            }
+          }
+        }
+        return updatedIdentity;
+      }
+      return identity;
+    });
+    set(ref(db, `users/${user.uid}/identities`), updatedIdentities);
+  };
+  
+  const handleDeleteIdentity = (id: string) => {
+    if (!user || !userData?.identities) return;
+    const updatedIdentities = userData.identities.filter(identity => identity.id !== id);
+    const identityRef = ref(db, `users/${user.uid}/identities`);
+     if (updatedIdentities.length > 0) {
+        set(identityRef, updatedIdentities);
+    } else {
+        remove(identityRef);
+    }
+  };
 
   const handleLock = () => {
     setMasterPassword("");
@@ -337,6 +427,8 @@ export function SafePassContainer() {
           credentials={userData?.credentials || []}
           documents={userData?.documents || []}
           paymentCards={userData?.paymentCards || []}
+          secureNotes={userData?.secureNotes || []}
+          identities={userData?.identities || []}
           masterPassword={masterPassword}
           onAddCredential={handleAddCredential}
           onUpdateCredential={handleUpdateCredential}
@@ -348,6 +440,12 @@ export function SafePassContainer() {
           onAddPaymentCard={handleAddPaymentCard}
           onUpdatePaymentCard={handleUpdatePaymentCard}
           onDeletePaymentCard={handleDeletePaymentCard}
+          onAddSecureNote={handleAddSecureNote}
+          onUpdateSecureNote={handleUpdateSecureNote}
+          onDeleteSecureNote={handleDeleteSecureNote}
+          onAddIdentity={handleAddIdentity}
+          onUpdateIdentity={handleUpdateIdentity}
+          onDeleteIdentity={handleDeleteIdentity}
       />
     </DashboardLayout>
   );

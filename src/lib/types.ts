@@ -1,4 +1,5 @@
 
+
 export interface Credential {
   id: string;
   url: string;
@@ -30,9 +31,41 @@ export interface PaymentCard {
     notes?: string;
 }
 
+export interface SecureNote {
+    id: string;
+    title_encrypted: string;
+    content_encrypted: string;
+    createdAt: string;
+    category?: string;
+}
+
+export interface Identity {
+    id: string;
+    title: string;
+    // Name
+    firstName_encrypted?: string;
+    middleName_encrypted?: string;
+    lastName_encrypted?: string;
+    // Contact
+    email_encrypted?: string;
+    phone_encrypted?: string;
+    website_encrypted?: string;
+    // Address
+    address1_encrypted?: string;
+    address2_encrypted?: string;
+    city_encrypted?: string;
+    state_encrypted?: string;
+    zip_encrypted?: string;
+    country_encrypted?: string;
+    notes?: string;
+}
+
+
 export interface UserData {
   masterPasswordCheck: string;
   credentials: Credential[];
   documents: SecureDocument[];
   paymentCards: PaymentCard[];
+  secureNotes: SecureNote[];
+  identities: Identity[];
 }
