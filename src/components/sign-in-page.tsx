@@ -68,20 +68,7 @@ const formSchema = z.object({
 
 export function SignInPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [config, setConfig] = useState<AppConfig>({});
-  const [activeSlide, setActiveSlide] = useState(0);
   const { toast } = useToast();
-
-  useEffect(() => {
-      const configRef = ref(db, 'config');
-      const unsubscribe = onValue(configRef, (snapshot) => {
-          const data = snapshot.val();
-          if(data) {
-              setConfig(data);
-          }
-      });
-      return () => unsubscribe();
-  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -125,9 +112,11 @@ export function SignInPage() {
 
   const { isSubmitting } = form.formState;
 
-  const imageUrls = config.signInImageUrls && config.signInImageUrls.length > 0 
-    ? config.signInImageUrls 
-    : ["https://picsum.photos/1200/1800?random=1"];
+  const imageUrls = [
+    "https://picsum.photos/1200/1800?random=1",
+    "https://picsum.photos/1200/1800?random=2",
+    "https://picsum.photos/1200/1800?random=3",
+  ];
 
 
   return (
