@@ -22,34 +22,33 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ShieldCheck, User, LogOut } from "lucide-react";
+import { ShieldCheck, LogOut } from "lucide-react";
 import { auth } from "@/lib/firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
 
 const formSchema = z.object({
-  username: z.string(), // Kept for form data structure, but will use Firebase user
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-type MasterPasswordFormProps = {
-  isInitialSetup: boolean;
-  onUnlock: (values: z.infer<typeof formSchema>) => void;
-  onSwitchMode: () => void;
+type CreateMasterPasswordFormProps = {
+  onSubmit: (password: string) => void;
   error?: string;
 };
 
-export function MasterPasswordForm({ onUnlock, error }: Omit<MasterPasswordFormProps, 'isInitialSetup' | 'onSwitchMode'>) {
-  const [user] = useAuthState(auth);
+export function CreateMasterPasswordForm({ onSubmit, error }: CreateMasterPasswordFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: user?.displayName || user?.email || "",
       password: "",
+      confirmPassword: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    onUnlock(values);
+  function handleFormSubmit(values: z.infer<typeof formSchema>) {
+    onSubmit(values.password);
   }
 
   return (
@@ -59,19 +58,17 @@ export function MasterPasswordForm({ onUnlock, error }: Omit<MasterPasswordFormP
             <ShieldCheck className="h-10 w-10 text-primary" />
         </div>
         <CardTitle className="text-3xl font-bold">
-          Welcome Back, {user?.displayName?.split(' ')[0] || 'User'}
+          Create Your Master Password
         </CardTitle>
         <CardDescription>
-          Enter your master password to unlock your vault.
+          This password will be used to encrypt all your data.
+          <br/>
+          <strong>Store it safely, it cannot be recovered.</strong>
         </CardDescription>
       </CardHeader>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(handleFormSubmit)}>
           <CardContent className="space-y-4">
-             <div className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
-                {user?.photoURL && <img src={user.photoURL} alt="User" className="h-8 w-8 rounded-full" />}
-                <div className="text-sm font-medium">{user?.displayName || user?.email}</div>
-            </div>
             <FormField
               control={form.control}
               name="password"
@@ -85,15 +82,28 @@ export function MasterPasswordForm({ onUnlock, error }: Omit<MasterPasswordFormP
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Master Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           </CardContent>
           <CardFooter className="flex-col gap-4">
             <Button type="submit" className="w-full">
-              Unlock Vault
+              Create Vault
             </Button>
-            <Button variant="link" size="sm" onClick={() => auth.signOut()} type="button">
+             <Button variant="link" size="sm" onClick={() => auth.signOut()} type="button">
                 <LogOut />
-                Sign Out
+                Cancel (Sign Out)
             </Button>
           </CardFooter>
         </form>
