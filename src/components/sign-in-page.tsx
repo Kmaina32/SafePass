@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,7 +23,7 @@ import {
     FormMessage,
   } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -34,6 +34,11 @@ import { ShieldCheck, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
+import { ref, onValue } from "firebase/database";
+import { AppConfig } from "@/lib/types";
+import { Carousel, CarouselContent, CarouselItem } from "./ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
+import { cn } from "@/lib/utils";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -63,7 +68,27 @@ const formSchema = z.object({
 
 export function SignInPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const { toast } = useToast();
+
+   useEffect(() => {
+    const configRef = ref(db, 'config');
+    const unsubscribe = onValue(configRef, (snapshot) => {
+        const data = snapshot.val() as AppConfig;
+        if (data?.signInImageUrls && data.signInImageUrls.length > 0) {
+            setImageUrls(data.signInImageUrls);
+        } else {
+            // Fallback images if none are set in the database
+            setImageUrls([
+                "https://picsum.photos/1200/1800?random=1",
+                "https://picsum.photos/1200/1800?random=2",
+                "https://picsum.photos/1200/1800?random=3",
+            ]);
+        }
+    });
+    return () => unsubscribe();
+  }, []);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -108,16 +133,37 @@ export function SignInPage() {
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div className="relative hidden lg:block bg-muted p-8">
-        <div className="relative h-full w-full bg-primary text-primary-foreground flex flex-col items-center justify-center rounded-2xl overflow-hidden">
-            <div className="relative z-20 text-center space-y-6">
+      <div className="relative hidden lg:block bg-muted p-2">
+        <div className="relative h-full w-full bg-primary text-primary-foreground flex flex-col items-center justify-center rounded-xl overflow-hidden">
+             <Carousel 
+                className="absolute inset-0 w-full h-full"
+                plugins={[Autoplay({delay: 5000, stopOnInteraction: false})]}
+                opts={{loop: true}}
+            >
+                <CarouselContent className="h-full">
+                    {imageUrls.map((url, index) => (
+                    <CarouselItem key={index} className="h-full">
+                        <Image 
+                            src={url}
+                            alt="Abstract security background"
+                            data-ai-hint="security abstract"
+                            fill
+                            className="object-cover opacity-10"
+                             onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                            }}
+                        />
+                    </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
+            <div className="relative z-20 text-center space-y-6 transition-all duration-1000 animate-in fade-in-50">
                 <ShieldCheck className="mx-auto h-20 w-20" />
-                <div className="transition-all duration-500 animate-in fade-in-50">
                 <h1 className="text-4xl font-bold">Your Digital Fortress Awaits</h1>
                 <p className="text-lg text-primary-foreground/90 max-w-md mx-auto mt-2">
-                    SafePass offers unparalleled security with client-side encryption. Your data is yours alone—impenetrable, synced, and always at your fingertips.
+                    Unlock intelligent security. Your vault is protected with client-side encryption and enhanced with AI-powered insights.
                 </p>
-                </div>
                 <div className="hidden lg:block">
                     <Button asChild variant="link" className="text-primary-foreground/80 hover:text-primary-foreground text-md">
                         <Link href="/documentation">
@@ -127,17 +173,6 @@ export function SignInPage() {
                     </Button>
                 </div>
             </div>
-            <Image 
-                src="https://picsum.photos/1200/1800"
-                alt="Abstract security background"
-                data-ai-hint="security abstract"
-                fill
-                className="object-cover opacity-10"
-                onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                }}
-            />
             <p className="absolute bottom-4 text-xs z-10">© 2025 SafePass - A Capstone Project by George K. Maina</p>
         </div>
       </div>
