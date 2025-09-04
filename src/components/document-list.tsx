@@ -59,14 +59,18 @@ async function decryptFile(encryptedBlob: Blob, encryptedKey: string, iv: string
     const randomKey = decrypt(encryptedKey, masterKey);
     if (!randomKey) throw new Error("Failed to decrypt file key.");
     
-    const encryptedData = await encryptedBlob.text();
+    const encryptedDataAsBase64 = await encryptedBlob.text();
 
-    const decrypted = CryptoJS.AES.decrypt(encryptedData, CryptoJS.enc.Hex.parse(randomKey), {
+    const decrypted = CryptoJS.AES.decrypt(encryptedDataAsBase64, CryptoJS.enc.Hex.parse(randomKey), {
         iv: CryptoJS.enc.Hex.parse(iv),
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
     });
     
     const decryptedBytes = wordToByteArray(decrypted);
 
+    // Use the original file type stored in the document metadata
+    const doc = (await (getBlob(storageRef(storage, 'dummy')) as any).type)
     return new Blob([decryptedBytes]);
 }
 
@@ -90,7 +94,7 @@ export function DocumentList({
         const decryptedBlob = await decryptFile(encryptedBlob, doc.encryptedKey, doc.iv, masterPassword);
 
         // 3. Trigger download
-        const url = window.URL.createObjectURL(decryptedBlob);
+        const url = window.URL.createObjectURL(new Blob([decryptedBlob], { type: doc.type }));
         const a = document.createElement('a');
         a.href = url;
         a.download = doc.name;
@@ -148,7 +152,7 @@ export function DocumentList({
 
               <div className="flex gap-2 pt-4 border-t">
                 <Button
-                  className="w-full"
+                  className="flex-1"
                   onClick={() => handleDownload(doc)}
                   disabled={isDownloading === doc.id}
                 >
@@ -167,7 +171,7 @@ export function DocumentList({
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="icon" aria-label="Delete document">
+                    <Button variant="outline" size="icon" aria-label="Delete document" className="flex-shrink-0">
                         <Trash2 className="text-destructive" />
                     </Button>
                   </AlertDialogTrigger>
