@@ -119,7 +119,7 @@ export function PasswordList({
                     {credential.notes && (
                          <div className="flex items-start gap-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border">
                             <Info className="h-4 w-4 flex-shrink-0 mt-0.5 text-primary"/>
-                            <p className="text-xs break-words">{credential.notes}</p>
+                            <p className="text-xs break-words whitespace-pre-wrap flex-1">{credential.notes}</p>
                          </div>
                     )}
                 </div>
