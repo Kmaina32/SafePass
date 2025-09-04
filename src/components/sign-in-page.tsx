@@ -108,21 +108,18 @@ export function SignInPage() {
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div className="relative hidden lg:block bg-muted p-8">
-        <div className="relative h-full w-full bg-slate-900 text-primary-foreground flex flex-col items-center justify-center overflow-hidden rounded-xl">
+      <div className="relative hidden lg:block bg-muted p-2">
+        <div className="relative h-full w-full bg-slate-900 text-primary-foreground flex flex-col items-center justify-center overflow-hidden rounded-xl p-10">
              <Image 
                 src="https://picsum.photos/1200/1800"
                 alt="Abstract security background"
                 data-ai-hint="security abstract"
                 fill
-                className="object-cover opacity-20"
+                className="object-cover opacity-30"
             />
             <div className="relative z-20 text-center space-y-6 transition-all duration-1000 animate-in fade-in-50">
                 <ShieldCheck className="mx-auto h-20 w-20" />
                 <h1 className="text-4xl font-bold">Unlock intelligent security. Your vault is protected with client-side encryption and enhanced with AI-powered insights.</h1>
-                <p className="text-lg text-primary-foreground/90 max-w-md mx-auto mt-2">
-                    SafePass offers unparalleled security with client-side encryption. Your data is yours alone impenetrable, synced, and always at your fingertips.
-                </p>
                 <div className="hidden lg:block">
                     <Button asChild variant="link" className="text-primary-foreground/80 hover:text-primary-foreground text-md">
                         <Link href="/documentation">
