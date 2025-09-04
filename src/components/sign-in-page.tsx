@@ -47,10 +47,9 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 const formSchema = z.object({
     email: z.string().email({ message: "Please enter a valid email address." }),
     password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-    confirmPassword: z.string(),
+    confirmPassword: z.string().optional(),
 }).refine((data) => {
-    // Only validate confirmPassword if it exists (i.e., in signup mode)
-    if (data.confirmPassword) {
+    if (data.confirmPassword !== undefined) {
         return data.password === data.confirmPassword;
     }
     return true;
@@ -207,3 +206,5 @@ export function SignInPage() {
     </Card>
   );
 }
+
+    
