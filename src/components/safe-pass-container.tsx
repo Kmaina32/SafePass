@@ -6,24 +6,46 @@ import { MasterPasswordForm } from "@/components/master-password-form";
 import { PasswordManager } from "@/components/password-manager";
 import { useMounted } from "@/hooks/use-mounted";
 import { encrypt, decrypt } from "@/lib/encryption";
-import type { Credential, UserData } from "@/lib/types";
-import { auth, db } from "@/lib/firebase";
+import type { Credential, UserData, SecureDocument } from "@/lib/types";
+import { auth, db, storage } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { ref, onValue, set } from "firebase/database";
+import { ref, onValue, set, get, child } from "firebase/database";
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { SignInPage } from "./sign-in-page";
 import { CreateMasterPasswordForm } from "./create-master-password-form";
 import { LoadingDisplay } from "./loading-display";
+import { DashboardLayout } from "./dashboard-layout";
+import { DocumentList } from "./document-list";
+import { useToast } from "@/hooks/use-toast";
+import CryptoJS from "crypto-js";
 
 const CHECK_VALUE = "safepass_ok";
+
+// Function to encrypt a file
+async function encryptFile(file: File, key: string): Promise<{ encryptedBlob: Blob, iv: string, randomKey: string }> {
+  const randomKey = CryptoJS.lib.WordArray.random(32).toString(); // 256-bit key
+  const iv = CryptoJS.lib.WordArray.random(16).toString(); // 128-bit IV
+  
+  const arrayBuffer = await file.arrayBuffer();
+  const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+  const encrypted = CryptoJS.AES.encrypt(wordArray, CryptoJS.enc.Hex.parse(randomKey), {
+      iv: CryptoJS.enc.Hex.parse(iv),
+  });
+  
+  const encryptedBlob = new Blob([encrypted.toString()]);
+  return { encryptedBlob, iv, randomKey };
+}
 
 export function SafePassContainer() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [masterPassword, setMasterPassword] = useState("");
   const [authError, setAuthError] = useState<string | undefined>();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [activeView, setActiveView] = useState<'passwords' | 'documents'>('passwords');
 
   const [user, loading] = useAuthState(auth);
   const isMounted = useMounted();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -51,6 +73,7 @@ export function SafePassContainer() {
     const newUser: UserData = {
       masterPasswordCheck: newCheck,
       credentials: [],
+      documents: [],
     };
     set(ref(db, `users/${user.uid}`), newUser)
       .then(() => {
@@ -132,6 +155,67 @@ export function SafePassContainer() {
       .catch((error) => console.error("Failed to delete credential", error));
   };
 
+  const handleAddDocument = async (file: File, name: string) => {
+    if (!user || !masterPassword) return;
+
+    try {
+      // 1. Encrypt the file
+      const { encryptedBlob, iv, randomKey } = await encryptFile(file, masterPassword);
+
+      // 2. Encrypt the randomKey with the master password
+      const encryptedKey = encrypt(randomKey, masterPassword);
+
+      // 3. Upload the encrypted file to Firebase Storage
+      const docId = crypto.randomUUID();
+      const path = `user-documents/${user.uid}/${docId}`;
+      const fileRef = storageRef(storage, path);
+      await uploadBytes(fileRef, encryptedBlob);
+
+      // 4. Create the document metadata
+      const newDocument: SecureDocument = {
+          id: docId,
+          name: name || file.name,
+          type: file.type,
+          storagePath: path,
+          encryptedKey: encryptedKey,
+          iv: iv,
+          size: file.size,
+          createdAt: new Date().toISOString(),
+      };
+
+      // 5. Add the metadata to the Realtime Database
+      const documents = userData?.documents || [];
+      const updatedDocuments = [...documents, newDocument];
+      await set(ref(db, `users/${user.uid}/documents`), updatedDocuments);
+      toast({ title: "Success", description: "Document securely uploaded." });
+    } catch (error) {
+        console.error("Error uploading document:", error);
+        toast({ variant: 'destructive', title: "Upload Failed", description: "Could not securely upload the document." });
+    }
+  }
+  
+  const handleDeleteDocument = async (id: string) => {
+    if (!user || !userData?.documents) return;
+    
+    const docToDelete = userData.documents.find(d => d.id === id);
+    if (!docToDelete) return;
+    
+    try {
+        // Delete file from storage
+        const fileRef = storageRef(storage, docToDelete.storagePath);
+        await deleteObject(fileRef);
+
+        // Delete metadata from RTDB
+        const updatedDocs = userData.documents.filter(d => d.id !== id);
+        await set(ref(db, `users/${user.uid}/documents`), updatedDocs);
+        toast({ title: "Success", description: "Document deleted." });
+    } catch (error) {
+        console.error("Error deleting document:", error);
+        toast({ variant: 'destructive', title: "Delete Failed", description: "Could not delete the document." });
+    }
+  }
+
+
   const handleLock = () => {
     setMasterPassword("");
     setIsUnlocked(false);
@@ -139,7 +223,7 @@ export function SafePassContainer() {
   };
 
   if (!isMounted || loading) {
-    return <LoadingDisplay />;
+    return <div className="flex items-center justify-center h-full w-full"><LoadingDisplay /></div>;
   }
 
   if (!user) {
@@ -147,28 +231,46 @@ export function SafePassContainer() {
   }
 
   if (!userData?.masterPasswordCheck) {
-    return <CreateMasterPasswordForm onSubmit={handleCreateMasterPassword} error={authError} />;
+    return <div className="flex items-center justify-center h-full w-full p-4"><CreateMasterPasswordForm onSubmit={handleCreateMasterPassword} error={authError} /></div>;
   }
   
   if (!isUnlocked) {
     return (
-      <MasterPasswordForm
-        isInitialSetup={false}
-        onUnlock={handleUnlock}
-        onSwitchMode={() => auth.signOut()}
-        error={authError}
-      />
+      <div className="flex items-center justify-center h-full w-full p-4">
+        <MasterPasswordForm
+          isInitialSetup={false}
+          onUnlock={handleUnlock}
+          onSwitchMode={() => auth.signOut()}
+          error={authError}
+        />
+      </div>
     );
   }
 
   return (
-    <PasswordManager
-      credentials={userData?.credentials || []}
-      masterPassword={masterPassword}
-      onAddCredential={handleAddCredential}
-      onUpdateCredential={handleUpdateCredential}
-      onDeleteCredential={handleDeleteCredential}
-      onLock={handleLock}
-    />
+    <DashboardLayout
+        user={user}
+        onLock={handleLock}
+        activeView={activeView}
+        onNavigate={setActiveView}
+    >
+        {activeView === 'passwords' ? (
+            <PasswordManager
+                credentials={userData?.credentials || []}
+                masterPassword={masterPassword}
+                onAddCredential={handleAddCredential}
+                onUpdateCredential={handleUpdateCredential}
+                onDeleteCredential={handleDeleteCredential}
+                activeView={activeView}
+                onAddDocument={handleAddDocument}
+            />
+        ) : (
+            <DocumentList
+                documents={userData?.documents || []}
+                masterPassword={masterPassword}
+                onDeleteDocument={handleDeleteDocument}
+            />
+        )}
+    </DashboardLayout>
   );
 }

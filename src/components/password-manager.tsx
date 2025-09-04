@@ -3,13 +3,11 @@
 
 import { AddPasswordDialog } from "@/components/add-password-dialog";
 import { PasswordList } from "@/components/password-list";
-import { Button } from "@/components/ui/button";
 import type { Credential } from "@/lib/types";
-import { Lock, LogOut, Search } from "lucide-react";
-import { auth } from "@/lib/firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
+import { Search } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState, useMemo } from "react";
+import { AddDocumentDialog } from "./add-document-dialog";
 
 type NewCredential = {
     url: string;
@@ -27,7 +25,8 @@ type PasswordManagerProps = {
   onAddCredential: (values: NewCredential) => void;
   onUpdateCredential: (values: UpdateCredential) => void;
   onDeleteCredential: (id: string) => void;
-  onLock: () => void;
+  activeView: 'passwords' | 'documents';
+  onAddDocument: (file: File, name: string) => Promise<void>;
 };
 
 export function PasswordManager({
@@ -36,9 +35,9 @@ export function PasswordManager({
   onAddCredential,
   onUpdateCredential,
   onDeleteCredential,
-  onLock,
+  activeView,
+  onAddDocument,
 }: PasswordManagerProps) {
-  const [user] = useAuthState(auth);
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredCredentials = useMemo(() => {
@@ -54,10 +53,8 @@ export function PasswordManager({
   }, [credentials, searchQuery]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <header className="flex flex-wrap justify-between items-center gap-4 py-6 border-b mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-primary tracking-tight">SafePass Vault</h1>
-        <div className="flex-grow flex justify-center items-center gap-4 px-4">
+    <>
+        <div className="flex-grow flex justify-center items-center gap-4 px-4 w-full">
             <div className="relative w-full max-w-lg">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input 
@@ -69,25 +66,20 @@ export function PasswordManager({
             </div>
         </div>
         <div className="flex gap-2 sm:gap-4 items-center">
-            {user?.photoURL && <img src={user.photoURL} alt="User" className="h-10 w-10 rounded-full" />}
-            <AddPasswordDialog onAddCredential={onAddCredential} />
-            <Button variant="outline" onClick={onLock}>
-              <Lock />
-              Lock Vault
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => auth.signOut()} aria-label="Sign out">
-              <LogOut />
-            </Button>
+            {activeView === 'passwords' ? (
+                 <AddPasswordDialog onAddCredential={onAddCredential} />
+            ) : (
+                <AddDocumentDialog onAddDocument={onAddDocument} />
+            )}
         </div>
-      </header>
-      <main>
-        <PasswordList
-          credentials={filteredCredentials}
-          masterPassword={masterPassword}
-          onUpdateCredential={onUpdateCredential}
-          onDeleteCredential={onDeleteCredential}
-        />
-      </main>
-    </div>
+        <main className="w-full mt-8">
+            <PasswordList
+            credentials={filteredCredentials}
+            masterPassword={masterPassword}
+            onUpdateCredential={onUpdateCredential}
+            onDeleteCredential={onDeleteCredential}
+            />
+       </main>
+    </>
   );
 }
