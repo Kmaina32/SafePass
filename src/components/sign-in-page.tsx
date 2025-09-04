@@ -178,7 +178,7 @@ export function SignInPage() {
 
         <Button onClick={handleGoogleSignIn} className="w-full" variant="outline" type="button">
           <GoogleIcon />
-          Sign in with Google
+          {mode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}
         </Button>
       </CardContent>
       <CardFooter className="flex-col gap-4">
@@ -206,7 +206,3 @@ export function SignInPage() {
     </Card>
   );
 }
-
-    
-
-    
