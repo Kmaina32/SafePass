@@ -132,7 +132,7 @@ export function SignInPage() {
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div className="relative hidden lg:flex flex-col items-center justify-center bg-primary text-primary-foreground p-8 rounded-r-2xl">
+      <div className="relative hidden lg:flex flex-col items-center justify-center bg-primary text-primary-foreground py-8 pl-8 rounded-r-2xl">
         <div className="relative z-20 text-center space-y-6">
             <ShieldCheck className="mx-auto h-20 w-20" />
             <div className="transition-all duration-500 animate-in fade-in-50">
