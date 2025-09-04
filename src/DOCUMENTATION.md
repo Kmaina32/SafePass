@@ -1,7 +1,7 @@
 # Capstone Project: Getting Started with Firebase in a Next.js App
 ## A Beginner’s Guide to Secure, Cloud-Powered Web Applications
 
-- **Student:** [Your Name Here]
+- **Student:** George K. Maina
 - **Technology Chosen:** Firebase (Authentication & Realtime Database) with Next.js
 - **Reason for Choice:** To learn how to build secure, real-time, multi-user applications without managing a backend server. Firebase offers a powerful suite of tools that integrates well with modern frontend frameworks like Next.js.
 - **End Goal:** To build a functional and secure password manager (SafePass) that leverages cloud authentication and a real-time database, with all sensitive data encrypted on the client-side.
@@ -127,20 +127,20 @@ export function SafePassContainer() {
 
 ## 6. AI Prompt Journal
 
-*(This section is for you to fill out based on your experience building this project with the AI.)*
+This section documents my experience building this project with an AI coding assistant.
 
 **Prompt 1:**
 - **Prompt:** "How can I add Firebase authentication with Google Sign-In to my Next.js application?"
 - **AI's Response Summary:** The AI provided the necessary steps to install Firebase, configure a project, create the `firebase.ts` file, and implement a sign-in button using `signInWithPopup`.
-- **My Evaluation:** This was extremely helpful and saved a lot of time reading through documentation. It gave me a clear, actionable plan.
+- **My Evaluation:** This was extremely helpful and saved a lot of time I would have spent reading documentation. It gave me a clear, actionable plan.
 
 **Prompt 2:**
-- **Prompt:** "I need to store user data in Firebase Realtime Database. Each user should only be able to access their own data. Show me how to structure the data and write it from my Next.js app."
+- **Prompt:** "I need to store user data in Firebase Realtime Database where each user can only access their own data. Show me how to structure the data and write it from my Next.js app."
 - **AI's Response Summary:** The AI suggested structuring the database with a top-level `users` key, followed by each user's unique ID (`uid`). It provided code examples using `ref()` and `set()` from the Firebase SDK to write data to the correct user-specific path.
 - **My Evaluation:** The suggested data structure was logical and scalable. The code examples were correct and easy to adapt.
 
 **Prompt 3:**
-- **Prompt:** "My app shows a hydration error in Next.js because I was checking for a user on the client side. How do I fix this?"
+- **Prompt:** "My app shows a hydration error in Next.js because I'm checking for a user on the client side. How do I fix this?"
 - **AI's Response Summary:** The AI explained that the error occurs because server-rendered content (no user) mismatches the client-rendered content (user detected). It suggested using a `useMounted` hook to delay rendering of client-side-only components until after the component has mounted in the browser, showing a skeleton loader in the meantime.
 - **My Evaluation:** This solved a complex issue that is common in server-rendered applications. The solution was elegant and followed best practices.
 
