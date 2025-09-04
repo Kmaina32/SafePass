@@ -177,7 +177,7 @@ export function SignInPage() {
           </div>
     </div>
 
-        <Button onClick={handleGoogleSignIn} className="w-full" variant="outline">
+        <Button onClick={handleGoogleSignIn} className="w-full" variant="outline" type="button">
           <GoogleIcon />
           Sign in with Google
         </Button>
