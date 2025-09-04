@@ -1,21 +1,56 @@
-Initialize a Git repository in your project's root directory:
+# SafePass - Secure Password Manager
 
-git init -b main
+SafePass is a secure, client-side password manager built with Next.js, Firebase, and crypto-js. It allows users to sign in with their Google account, set a master password, and securely store their credentials. All encryption and decryption happens in the browser, ensuring the master password is never stored or transmitted.
 
-Add all your files to the new repository:
+## Getting Started
 
-git add .
+### Prerequisites
 
-Commit the files:
+- Node.js (v18 or later)
+- npm or yarn
 
-git commit -m "Initial commit"
+### Installation & Setup
 
-Create a new repository on GitHub: Go to github.com/new and create a new repository. You can name it whatever you like, for example, safepass-app.
+1.  **Clone the repository:**
+    ```bash
+    git clone <your-repository-url>
+    cd safepass-app
+    ```
 
-Link your local repository to the one on GitHub: Make sure to replace <your-repository-url> with the URL you get from GitHub after creating the repository.
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-git remote add origin https://github.com/Kmaina32/SafePass
+3.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
 
-Push your code to GitHub:
+Open [http://localhost:9002](http://localhost:9002) with your browser to see the result.
 
-git push -u origin main
+## Key Technologies
+
+- **Next.js**: React framework for building the user interface.
+- **Firebase**: Handles user authentication (Sign in with Google) and data storage (Realtime Database).
+- **crypto-js**: Used for AES encryption and decryption of credentials.
+- **ShadCN/UI & Tailwind CSS**: For styling the application.
+
+## How to Deploy
+
+This application is ready to be deployed to a platform like Vercel or Firebase App Hosting.
+
+### Deploying to GitHub
+
+1.  **Initialize a Git repository**:
+    ```bash
+    git init -b main
+    git add .
+    git commit -m "Initial commit"
+    ```
+2.  **Create a new repository on GitHub** at [github.com/new](https://github.com/new).
+3.  **Link and push your local repository**:
+    ```bash
+    git remote add origin <your-github-repository-url>
+    git push -u origin main
+    ```
