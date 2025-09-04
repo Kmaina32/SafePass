@@ -1,7 +1,7 @@
 # Capstone Project: Getting Started with Firebase in a Next.js App
 ## A Beginner’s Guide to Secure, Cloud-Powered Web Applications
 
-- **Student:** [Your Name Here]
+- **Student:** George kairu Maina 
 - **Technology Chosen:** Firebase (Authentication & Realtime Database) with Next.js
 - **Reason for Choice:** To learn how to build secure, real-time, multi-user applications without managing a backend server. Firebase offers a powerful suite of tools that integrates well with modern frontend frameworks like Next.js.
 - **End Goal:** To build a functional and secure password manager (SafePass) that leverages cloud authentication and a real-time database, with all sensitive data encrypted on the client-side.
