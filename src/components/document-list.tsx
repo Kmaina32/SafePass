@@ -19,8 +19,6 @@ import { useToast } from "@/hooks/use-toast";
 import { decrypt } from "@/lib/encryption";
 import type { SecureDocument } from "@/lib/types";
 import { Download, FileText, Trash2, Calendar, HardDrive, Loader2 } from "lucide-react";
-import { auth, storage } from "@/lib/firebase";
-import { ref as storageRef, getBlob } from "firebase/storage";
 import CryptoJS from "crypto-js";
 
 type DocumentListProps = {
@@ -54,24 +52,18 @@ function wordToByteArray(wordArray: CryptoJS.lib.WordArray) {
     return result;
 }
 
-// Function to decrypt a file
-async function decryptFile(encryptedBlob: Blob, encryptedKey: string, iv: string, masterKey: string): Promise<Blob> {
+// Function to decrypt a file from base64
+function decryptFileFromB64(encryptedData: string, encryptedKey: string, iv: string, masterKey: string): BlobPart {
     const randomKey = decrypt(encryptedKey, masterKey);
     if (!randomKey) throw new Error("Failed to decrypt file key.");
     
-    const encryptedDataAsBase64 = await encryptedBlob.text();
-
-    const decrypted = CryptoJS.AES.decrypt(encryptedDataAsBase64, CryptoJS.enc.Hex.parse(randomKey), {
+    const decrypted = CryptoJS.AES.decrypt(encryptedData, CryptoJS.enc.Hex.parse(randomKey), {
         iv: CryptoJS.enc.Hex.parse(iv),
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7
     });
     
-    const decryptedBytes = wordToByteArray(decrypted);
-
-    // Use the original file type stored in the document metadata
-    const doc = (await (getBlob(storageRef(storage, 'dummy')) as any).type)
-    return new Blob([decryptedBytes]);
+    return wordToByteArray(decrypted);
 }
 
 
@@ -86,15 +78,12 @@ export function DocumentList({
   const handleDownload = async (doc: SecureDocument) => {
     setIsDownloading(doc.id);
     try {
-        // 1. Get encrypted file from storage
-        const fileRef = storageRef(storage, doc.storagePath);
-        const encryptedBlob = await getBlob(fileRef);
+        // 1. Decrypt the file data
+        const decryptedBytes = decryptFileFromB64(doc.data_encrypted, doc.encryptedKey, doc.iv, masterPassword);
 
-        // 2. Decrypt the file
-        const decryptedBlob = await decryptFile(encryptedBlob, doc.encryptedKey, doc.iv, masterPassword);
-
-        // 3. Trigger download
-        const url = window.URL.createObjectURL(new Blob([decryptedBlob], { type: doc.type }));
+        // 2. Create a blob and trigger download
+        const blob = new Blob([decryptedBytes], { type: doc.type });
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = doc.name;

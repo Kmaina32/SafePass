@@ -7,10 +7,9 @@ import { PasswordManager } from "@/components/password-manager";
 import { useMounted } from "@/hooks/use-mounted";
 import { encrypt, decrypt } from "@/lib/encryption";
 import type { Credential, UserData, SecureDocument } from "@/lib/types";
-import { auth, db, storage } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { ref, onValue, set } from "firebase/database";
-import { ref as storageRef, uploadBytes, deleteObject } from "firebase/storage";
+import { ref, onValue, set, remove } from "firebase/database";
 import { SignInPage } from "./sign-in-page";
 import { CreateMasterPasswordForm } from "./create-master-password-form";
 import { LoadingDisplay } from "./loading-display";
@@ -19,9 +18,12 @@ import { useToast } from "@/hooks/use-toast";
 import CryptoJS from "crypto-js";
 
 const CHECK_VALUE = "safepass_ok";
+const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 
 // Function to encrypt a file
-async function encryptFile(file: File): Promise<{ encryptedBlob: Blob, iv: string, randomKey: string }> {
+async function encryptFile(file: File): Promise<{ encryptedData: string, iv: string, randomKey: string }> {
   const randomKey = CryptoJS.lib.WordArray.random(32).toString(); // 256-bit key
   const iv = CryptoJS.lib.WordArray.random(16).toString(); // 128-bit IV
   
@@ -34,8 +36,7 @@ async function encryptFile(file: File): Promise<{ encryptedBlob: Blob, iv: strin
             iv: CryptoJS.enc.Hex.parse(iv),
         }).toString();
         
-        const encryptedBlob = new Blob([encrypted], { type: 'text/plain' });
-        resolve({ encryptedBlob, iv, randomKey });
+        resolve({ encryptedData: encrypted, iv, randomKey });
       } catch (error) {
         reject(error);
       }
@@ -167,32 +168,35 @@ export function SafePassContainer() {
   const handleAddDocument = async (file: File, name: string) => {
     if (!user || !masterPassword) return;
 
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast({
+            variant: 'destructive',
+            title: 'File Too Large',
+            description: `Please select a file smaller than ${MAX_FILE_SIZE_MB} MB.`
+        });
+        throw new Error('File too large');
+    }
+
     try {
       // 1. Encrypt the file
-      const { encryptedBlob, iv, randomKey } = await encryptFile(file);
+      const { encryptedData, iv, randomKey } = await encryptFile(file);
 
       // 2. Encrypt the randomKey with the master password
       const encryptedKey = encrypt(randomKey, masterPassword);
 
-      // 3. Upload the encrypted file to Firebase Storage
-      const docId = crypto.randomUUID();
-      const path = `user-documents/${user.uid}/${docId}`;
-      const fileRef = storageRef(storage, path);
-      await uploadBytes(fileRef, encryptedBlob);
-
-      // 4. Create the document metadata
+      // 3. Create the document metadata
       const newDocument: SecureDocument = {
-          id: docId,
+          id: crypto.randomUUID(),
           name: name || file.name,
           type: file.type,
-          storagePath: path,
+          data_encrypted: encryptedData,
           encryptedKey: encryptedKey,
           iv: iv,
           size: file.size,
           createdAt: new Date().toISOString(),
       };
 
-      // 5. Add the metadata to the Realtime Database
+      // 4. Add the metadata to the Realtime Database
       const documents = userData?.documents || [];
       const updatedDocuments = [...documents, newDocument];
       await set(ref(db, `users/${user.uid}/documents`), updatedDocuments);
@@ -207,17 +211,18 @@ export function SafePassContainer() {
   const handleDeleteDocument = async (id: string) => {
     if (!user || !userData?.documents) return;
     
-    const docToDelete = userData.documents.find(d => d.id === id);
-    if (!docToDelete) return;
-    
     try {
-        // Delete file from storage
-        const fileRef = storageRef(storage, docToDelete.storagePath);
-        await deleteObject(fileRef);
-
         // Delete metadata from RTDB
         const updatedDocs = userData.documents.filter(d => d.id !== id);
-        await set(ref(db, `users/${user.uid}/documents`), updatedDocs);
+        const docRef = ref(db, `users/${user.uid}/documents`);
+        
+        if (updatedDocs.length > 0) {
+             await set(docRef, updatedDocs);
+        } else {
+            // If it's the last document, remove the entire 'documents' node
+            await remove(docRef);
+        }
+
         toast({ title: "Success", description: "Document deleted." });
     } catch (error) {
         console.error("Error deleting document:", error);

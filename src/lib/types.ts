@@ -12,9 +12,9 @@ export interface SecureDocument {
     id: string;
     name: string;
     type: string;
-    storagePath: string;
-    encryptedKey: string; // The AES key, encrypted with the master password
+    data_encrypted: string; // The encrypted file content as a Base64 string
     iv: string; // The initialization vector for AES
+    encryptedKey: string; // The AES key, encrypted with the master password
     size: number;
     createdAt: string;
 }
