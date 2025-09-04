@@ -10,13 +10,14 @@ import { encrypt, decrypt } from "@/lib/encryption";
 import type { Credential, UserData, SecureDocument, PaymentCard, SecureNote, Identity } from "@/lib/types";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { ref, onValue, set, remove } from "firebase/database";
+import { ref, onValue, set, remove, update } from "firebase/database";
 import { SignInPage } from "./sign-in-page";
 import { CreateMasterPasswordForm } from "./create-master-password-form";
 import { LoadingDisplay } from "./loading-display";
 import { DashboardLayout, ActiveView } from "./dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import CryptoJS from "crypto-js";
+import { AdminDashboard } from "./admin-dashboard";
 
 const CHECK_VALUE = "safepass_ok";
 const MAX_FILE_SIZE_MB = 5;
@@ -71,6 +72,19 @@ export function SafePassContainer() {
           setIsUnlocked(false);
         }
       });
+
+      // Update last seen timestamp and profile info
+      const updates: Partial<UserData> = {
+        lastSeen: new Date().toISOString(),
+        profile: {
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL
+        }
+      };
+      update(userRef, updates);
+
+
       return () => unsubscribe();
     } else {
       setUserData(null);
@@ -88,6 +102,12 @@ export function SafePassContainer() {
       paymentCards: [],
       secureNotes: [],
       identities: [],
+      lastSeen: new Date().toISOString(),
+       profile: {
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL
+        }
     };
     set(ref(db, `users/${user.uid}`), newUser)
       .then(() => {
@@ -416,13 +436,11 @@ export function SafePassContainer() {
     );
   }
 
-  return (
-    <DashboardLayout
-        user={user}
-        onLock={handleLock}
-        activeView={activeView}
-        onNavigate={setActiveView}
-    >
+  const renderContent = () => {
+    if (activeView === 'admin') {
+      return <AdminDashboard />;
+    }
+    return (
       <PasswordManager
           credentials={userData?.credentials || []}
           documents={userData?.documents || []}
@@ -447,6 +465,17 @@ export function SafePassContainer() {
           onUpdateIdentity={handleUpdateIdentity}
           onDeleteIdentity={handleDeleteIdentity}
       />
+    );
+  }
+
+  return (
+    <DashboardLayout
+        user={user}
+        onLock={handleLock}
+        activeView={activeView}
+        onNavigate={setActiveView}
+    >
+      {renderContent()}
     </DashboardLayout>
   );
 }

@@ -68,4 +68,10 @@ export interface UserData {
   paymentCards: PaymentCard[];
   secureNotes: SecureNote[];
   identities: Identity[];
+  lastSeen?: string;
+  profile?: {
+      email?: string | null;
+      displayName?: string | null;
+      photoURL?: string | null;
+  }
 }

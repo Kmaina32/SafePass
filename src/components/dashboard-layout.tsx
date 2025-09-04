@@ -2,14 +2,17 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Lock, LogOut, FileText, KeyRound, ShieldCheck, Menu, User, CreditCard, StickyNote, LifeBuoy, Settings, Trash2, LayoutGrid, RotateCw } from "lucide-react";
+import { Lock, LogOut, FileText, KeyRound, ShieldCheck, Menu, User, CreditCard, StickyNote, LifeBuoy, Settings, Trash2, LayoutGrid, RotateCw, BookOpen, ShieldQuestion } from "lucide-react";
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth } from "@/lib/firebase";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
-export type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings';
+export type ActiveView = 'passwords' | 'documents' | 'dashboard' | 'identities' | 'payments' | 'notes' | 'generator' | 'security' | 'trash' | 'settings' | 'admin';
+
+const ADMIN_EMAIL = "gmaina424@gmail.com";
 
 type DashboardLayoutProps = {
   user: FirebaseUser | null | undefined;
@@ -32,10 +35,11 @@ const navItems = [
     { view: 'settings', label: 'Settings', icon: Settings },
 ] as const;
 
+const adminNavItem = { view: 'admin', label: 'Admin Panel', icon: ShieldQuestion } as const;
 
-function SidebarNav({ activeView, onNavigate }: { activeView: ActiveView, onNavigate: (view: ActiveView) => void }) {
-    const functionalViews: ActiveView[] = ['passwords', 'documents', 'payments', 'security'];
 
+function SidebarNav({ activeView, onNavigate, user }: { activeView: ActiveView, onNavigate: (view: ActiveView) => void, user: FirebaseUser | null | undefined }) {
+    const isUserAdmin = user?.email === ADMIN_EMAIL;
     return (
         <nav className="grid items-start px-4 text-sm font-medium">
             {navItems.map(item => (
@@ -49,6 +53,17 @@ function SidebarNav({ activeView, onNavigate }: { activeView: ActiveView, onNavi
                     {item.label}
                 </Button>
             ))}
+            {isUserAdmin && (
+                 <Button
+                    key={adminNavItem.view}
+                    variant={activeView === adminNavItem.view ? 'secondary' : 'ghost'}
+                    className="justify-start gap-3 mt-4 border-t pt-4"
+                    onClick={() => onNavigate(adminNavItem.view)}
+                >
+                    <adminNavItem.icon />
+                    {adminNavItem.label}
+                </Button>
+            )}
         </nav>
     );
 }
@@ -66,10 +81,14 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                 </a>
             </div>
             <div className="flex-1 overflow-auto py-4">
-                <SidebarNav activeView={activeView} onNavigate={onNavigate} />
+                <SidebarNav activeView={activeView} onNavigate={onNavigate} user={user} />
             </div>
-            <div className="mt-auto p-4 border-t">
-                <div className="flex items-center gap-2 mb-4">
+            <div className="mt-auto p-4 border-t space-y-4">
+                 <Link href="/documentation" className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                    <BookOpen />
+                    <span>Capstone Documentation</span>
+                </Link>
+                <div className="flex items-center gap-2">
                     {user?.photoURL && <img src={user.photoURL} alt="User" className="h-8 w-8 rounded-full" />}
                     <div className="flex flex-col overflow-hidden">
                         <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
@@ -105,7 +124,7 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                             </a>
                         </div>
                         <div className="overflow-auto py-4">
-                            <SidebarNav activeView={activeView} onNavigate={(view) => {
+                            <SidebarNav activeView={activeView} user={user} onNavigate={(view) => {
                                 onNavigate(view);
                                 setMobileMenuOpen(false);
                             }} />

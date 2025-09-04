@@ -30,9 +30,10 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { ShieldCheck, Lock, KeyRound, Cloud, BookOpen } from "lucide-react";
+import { ShieldCheck, Lock, KeyRound, Cloud, BookOpen, Fingerprint } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import Image from "next/image";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -103,111 +104,113 @@ export function SignInPage() {
   const { isSubmitting } = form.formState;
 
   return (
-    <Card className="w-full max-w-md shadow-2xl">
-      <CardHeader className="text-center">
-        <div className="mx-auto bg-primary/10 p-3 rounded-full mb-4">
-          <ShieldCheck className="h-10 w-10 text-primary" />
+    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+      <div className="relative hidden lg:flex flex-col items-center justify-center bg-primary text-primary-foreground p-10">
+        <div className="absolute inset-0 bg-primary-foreground/10" />
+        <div className="relative z-10 text-center space-y-6">
+            <ShieldCheck className="mx-auto h-20 w-20" />
+            <h1 className="text-4xl font-bold">Your Digital Fortress Awaits</h1>
+            <p className="text-lg text-primary-foreground/90 max-w-md mx-auto">
+                SafePass offers unparalleled security with client-side encryption. Your data is yours alone—impenetrable, synced, and always at your fingertips.
+            </p>
         </div>
-        <CardTitle className="text-3xl font-bold">
-            {mode === 'signin' ? "Welcome to SafePass" : "Create your Account"}
-        </CardTitle>
-        <CardDescription>
-          Your secure and simple password manager.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleEmailAuth)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="you@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {mode === 'signup' && (
-                 <FormField
-                 control={form.control}
-                 name="confirmPassword"
-                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>Confirm Password</FormLabel>
-                     <FormControl>
-                       <Input type="password" placeholder="••••••••" {...field} />
-                     </FormControl>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
-            )}
-             <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Processing..." : (mode === 'signin' ? 'Sign In' : 'Create Account')}
+        <Image 
+            src="https://picsum.photos/1200/1800" 
+            alt="Abstract security background"
+            data-ai-hint="security abstract"
+            fill
+            className="absolute inset-0 h-full w-full object-cover opacity-10"
+        />
+        <p className="absolute bottom-4 text-xs z-10">© 2024 SafePass - A Capstone Project by George K. Maina</p>
+      </div>
+
+      <div className="flex items-center justify-center p-6 sm:p-12">
+        <Card className="w-full max-w-md shadow-2xl border-none sm:border">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold">
+                {mode === 'signin' ? "Welcome Back" : "Create your Account"}
+            </CardTitle>
+            <CardDescription>
+              Enter your credentials to {mode === 'signin' ? 'access your vault' : 'get started'}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleEmailAuth)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="you@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {mode === 'signup' && (
+                    <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? "Processing..." : (mode === 'signin' ? 'Sign In' : 'Create Account')}
+                </Button>
+            </form>
+        </Form>
+
+        <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+        </div>
+
+            <Button onClick={handleGoogleSignIn} className="w-full" variant="outline" type="button">
+              <GoogleIcon />
+              {mode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}
             </Button>
-        </form>
-    </Form>
-
-    <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
-            </span>
-          </div>
+          </CardContent>
+          <CardFooter className="flex-col gap-4">
+            <Button variant="link" onClick={() => {
+                setMode(mode === 'signin' ? 'signup' : 'signin');
+                form.reset();
+            }}>
+                {mode === 'signin' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
-
-        <Button onClick={handleGoogleSignIn} className="w-full" variant="outline" type="button">
-          <GoogleIcon />
-          {mode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}
-        </Button>
-      </CardContent>
-      <CardFooter className="flex-col gap-4">
-        <Button variant="link" onClick={() => {
-            setMode(mode === 'signin' ? 'signup' : 'signin');
-            form.reset();
-        }}>
-            {mode === 'signin' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-        </Button>
-        <ul className="space-y-3 text-sm text-muted-foreground text-center pt-4 border-t w-full">
-            <li className="flex items-center gap-3">
-                <Lock className="h-5 w-5 text-primary"/>
-                <span>Securely store all your passwords in one place.</span>
-            </li>
-            <li className="flex items-center gap-3">
-                <KeyRound className="h-5 w-5 text-primary"/>
-                <span>Client-side encryption ensures only you can access your data.</span>
-            </li>
-             <li className="flex items-center gap-3">
-                <Cloud className="h-5 w-5 text-primary"/>
-                <span>Sync your passwords across all your devices seamlessly.</span>
-            </li>
-             <li className="flex items-center gap-3 justify-center text-primary hover:underline">
-                 <BookOpen className="h-5 w-5"/>
-                 <Link href="/documentation">View Capstone Documentation</Link>
-            </li>
-        </ul>
-      </CardFooter>
-    </Card>
   );
 }
