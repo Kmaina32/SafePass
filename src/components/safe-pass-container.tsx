@@ -4,8 +4,10 @@ import { useState } from "react";
 import { MasterPasswordForm } from "@/components/master-password-form";
 import { PasswordManager } from "@/components/password-manager";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useMounted } from "@/hooks/use-mounted";
 import { encrypt, decrypt } from "@/lib/encryption";
 import type { Credential } from "@/lib/types";
+import { Skeleton } from "./ui/skeleton";
 
 const MASTER_PASSWORD_CHECK_KEY = "safepass_check";
 const CREDENTIALS_KEY = "safepass_credentials";
@@ -18,6 +20,8 @@ export function SafePassContainer() {
   
   const [masterPasswordCheck, setMasterPasswordCheck] = useLocalStorage<string | null>(MASTER_PASSWORD_CHECK_KEY, null);
   const [credentials, setCredentials] = useLocalStorage<Credential[]>(CREDENTIALS_KEY, []);
+  
+  const isMounted = useMounted();
 
   const handleUnlock = (password: string) => {
     setAuthError(undefined);
@@ -65,6 +69,14 @@ export function SafePassContainer() {
     setMasterPassword("");
     setIsUnlocked(false);
     setAuthError(undefined);
+  }
+
+  if (!isMounted) {
+    return (
+       <div className="flex flex-col items-center justify-center w-full max-w-md">
+        <Skeleton className="h-[450px] w-full" />
+      </div>
+    );
   }
 
   if (!isUnlocked) {
