@@ -7,7 +7,7 @@
 - **End Goal:** To build a functional and secure password manager (SafePass) that leverages cloud authentication and a real-time database, with all sensitive data encrypted on the client-side.
 
 ---
-
+   
 ## 2. Quick Summary of the Technology
 
 - **What is it?** Firebase is a platform developed by Google for creating mobile and web applications. It provides a suite of tools to build, improve, and grow your app. We are focusing on two of its core services:
