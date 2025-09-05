@@ -3,11 +3,12 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, FileText, KeyRound, MessageSquareWarning, PlusCircle, RotateCw, ShieldCheck, StickyNote, User } from "lucide-react";
+import { CreditCard, FileText, KeyRound, MessageSquareWarning, PlusCircle, RotateCw, ShieldCheck, StickyNote, User, ChevronRight } from "lucide-react";
 import { ActiveView } from "./dashboard-layout";
 import { useMemo } from "react";
 import { Credential } from "@/lib/types";
 import { decrypt } from "@/lib/encryption";
+import { Separator } from "./ui/separator";
 
 type MainDashboardProps = {
     stats: {
@@ -22,17 +23,18 @@ type MainDashboardProps = {
     onNavigate: (view: ActiveView) => void;
 }
 
-const StatCard = ({ title, value, icon, onNavigate, view }: { title: string, value: number, icon: React.ReactNode, onNavigate: (view: ActiveView) => void, view: ActiveView }) => (
-    <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => onNavigate(view)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            {icon}
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-            <p className="text-xs text-muted-foreground">item(s) saved</p>
-        </CardContent>
-    </Card>
+const StatRow = ({ title, value, icon, onNavigate, view }: { title: string, value: number, icon: React.ReactNode, onNavigate: (view: ActiveView) => void, view: ActiveView }) => (
+    <div className="flex items-center p-4 hover:bg-muted/50 transition-colors cursor-pointer rounded-lg" onClick={() => onNavigate(view)}>
+        {icon}
+        <div className="ml-4 flex-1">
+            <p className="font-medium">{title}</p>
+            <p className="text-sm text-muted-foreground">{value} item(s) saved</p>
+        </div>
+        <div className="flex items-center gap-4">
+            <span className="text-xl font-bold">{value}</span>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        </div>
+    </div>
 )
 
 export function MainDashboard({ stats, credentials, masterPassword, onNavigate }: MainDashboardProps) {
@@ -68,6 +70,14 @@ export function MainDashboard({ stats, credentials, masterPassword, onNavigate }
         if (securityScore >= 50) return 'text-yellow-500';
         return 'text-red-500';
       };
+
+      const statItems = [
+        { title: "Passwords", value: stats.passwords, icon: <KeyRound className="h-6 w-6 text-muted-foreground" />, view: 'passwords' as ActiveView },
+        { title: "Secure Notes", value: stats.notes, icon: <StickyNote className="h-6 w-6 text-muted-foreground" />, view: 'notes' as ActiveView },
+        { title: "Identities", value: stats.identities, icon: <User className="h-6 w-6 text-muted-foreground" />, view: 'identities' as ActiveView },
+        { title: "Payment Cards", value: stats.cards, icon: <CreditCard className="h-6 w-6 text-muted-foreground" />, view: 'payments' as ActiveView },
+        { title: "Documents", value: stats.documents, icon: <FileText className="h-6 w-6 text-muted-foreground" />, view: 'documents' as ActiveView },
+      ]
       
 
     return (
@@ -78,13 +88,17 @@ export function MainDashboard({ stats, credentials, masterPassword, onNavigate }
                     Here's a quick overview of your secure vault.
                 </p>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                <StatCard title="Passwords" value={stats.passwords} icon={<KeyRound className="h-4 w-4 text-muted-foreground" />} onNavigate={onNavigate} view="passwords" />
-                <StatCard title="Secure Notes" value={stats.notes} icon={<StickyNote className="h-4 w-4 text-muted-foreground" />} onNavigate={onNavigate} view="notes" />
-                <StatCard title="Identities" value={stats.identities} icon={<User className="h-4 w-4 text-muted-foreground" />} onNavigate={onNavigate} view="identities" />
-                <StatCard title="Payment Cards" value={stats.cards} icon={<CreditCard className="h-4 w-4 text-muted-foreground" />} onNavigate={onNavigate} view="payments" />
-                <StatCard title="Documents" value={stats.documents} icon={<FileText className="h-4 w-4 text-muted-foreground" />} onNavigate={onNavigate} view="documents" />
-            </div>
+            
+            <Card>
+                <CardContent className="p-0">
+                    <div className="divide-y divide-border">
+                        {statItems.map((item, index) => (
+                             <StatRow key={index} {...item} onNavigate={onNavigate} />
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="lg:col-span-2">
