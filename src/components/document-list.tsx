@@ -18,9 +18,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { decrypt } from "@/lib/encryption";
 import type { SecureDocument } from "@/lib/types";
-import { Download, FileText, Trash2, Calendar, HardDrive, Loader2, Lock, Unlock, FileDown } from "lucide-react";
+import { Download, FileText, Trash2, Calendar, HardDrive, Loader2, Lock, Unlock, FileDown, Play, FileAudio, FileVideo } from "lucide-react";
 import CryptoJS from "crypto-js";
 import jsPDF from "jspdf";
+import { useSetAtom } from "jotai";
+import { mediaPreviewAtom } from "./media-preview-dialog";
 
 
 type DocumentListProps = {
@@ -79,43 +81,50 @@ export function DocumentList({
   onToggleDocumentLock
 }: DocumentListProps) {
   const { toast } = useToast();
-  const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const setMediaPreview = useSetAtom(mediaPreviewAtom);
+
   
-  const handleDownload = async (doc: SecureDocument, asPdf: boolean = false) => {
-    setIsDownloading(doc.id);
+  const handleAction = async (doc: SecureDocument, action: 'download' | 'preview' | 'pdf') => {
+    setIsLoading(`${doc.id}-${action}`);
     try {
         const { bytes, b64 } = decryptFileFromB64(doc.data_encrypted, doc.encryptedKey, doc.iv, masterPassword);
+        const dataUri = `data:${doc.type};base64,${b64}`;
 
-        if (asPdf && doc.type.startsWith("image/")) {
+        if (action === 'preview') {
+            setMediaPreview({
+                isOpen: true,
+                file: { name: doc.name, type: doc.type, dataUri }
+            });
+        } else if (action === 'pdf' && doc.type.startsWith("image/")) {
             const pdf = new jsPDF();
-            const imgData = `data:${doc.type};base64,${b64}`;
-            const imgProps = pdf.getImageProperties(imgData);
+            const imgProps = pdf.getImageProperties(dataUri);
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            pdf.addImage(dataUri, 'JPEG', 0, 0, pdfWidth, pdfHeight);
             pdf.save(`${doc.name.split('.')[0] || 'document'}.pdf`);
-        } else {
+            toast({ title: "Success", description: "Image saved as PDF." });
+        } else { // download
             const blob = new Blob([bytes], { type: doc.type });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = doc.name;
             document.body.appendChild(a);
-a.click();
+            a.click();
             window.URL.revokeObjectURL(url);
             a.remove();
+            toast({ title: "Success", description: "Document decrypted and downloaded." });
         }
-
-        toast({ title: "Success", description: "Document decrypted and downloaded." });
     } catch (err) {
       console.error(err);
       toast({
         variant: "destructive",
-        title: "Download Error",
-        description: "Failed to download document. Master password may be incorrect.",
+        title: "Action Error",
+        description: "Failed to perform action. Master password may be incorrect.",
       });
     } finally {
-        setIsDownloading(null);
+        setIsLoading(null);
     }
   };
 
@@ -124,18 +133,27 @@ a.click();
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {documents.map((doc) => {
         const isImage = doc.type.startsWith("image/");
+        const isVideo = doc.type.startsWith("video/");
+        const isAudio = doc.type.startsWith("audio/");
+        const isMedia = isVideo || isAudio;
+
+        const getIcon = () => {
+            if (isAudio) return <FileAudio className="h-6 w-6 text-primary flex-shrink-0" />;
+            if (isVideo) return <FileVideo className="h-6 w-6 text-primary flex-shrink-0" />;
+            return <FileText className="h-6 w-6 text-primary flex-shrink-0" />;
+        }
         
         return (
           <Card key={doc.id} className="flex flex-col transition-all hover:shadow-lg">
              <CardHeader className="pb-4">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <FileText className="h-6 w-6 text-primary flex-shrink-0" />
+                  {getIcon()}
                   <span className="truncate text-lg font-semibold" title={doc.name}>{doc.name}</span>
                 </div>
                 {doc.isLocked && <Lock className="h-5 w-5 text-destructive flex-shrink-0" />}
               </div>
-               <CardDescription className="truncate text-xs">{doc.type}</CardDescription>
+               <CardDescription className="truncate text-xs pt-1">{doc.type}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-y-4 flex flex-col justify-between">
                 <div className="space-y-2 text-sm text-muted-foreground">
@@ -151,20 +169,30 @@ a.click();
 
               <div className="flex flex-col gap-2 pt-4 border-t">
                 <div className="flex gap-2">
+                   {isMedia && (
+                    <Button
+                        className="flex-1"
+                        onClick={() => handleAction(doc, 'preview')}
+                        disabled={isLoading?.startsWith(doc.id) || doc.isLocked}
+                    >
+                        {isLoading === `${doc.id}-preview` ? <Loader2 className="animate-spin" /> : <Play />}
+                        Preview
+                    </Button>
+                   )}
                   <Button
                     className="flex-1"
-                    onClick={() => handleDownload(doc)}
-                    disabled={isDownloading === doc.id || doc.isLocked}
+                    onClick={() => handleAction(doc, 'download')}
+                    disabled={isLoading?.startsWith(doc.id) || doc.isLocked}
                   >
-                    {isDownloading === doc.id ? <Loader2 className="animate-spin" /> : <Download />}
+                    {isLoading === `${doc.id}-download` ? <Loader2 className="animate-spin" /> : <Download />}
                     Download
                   </Button>
                   {isImage && (
                     <Button
                       variant="secondary"
                       size="icon"
-                      onClick={() => handleDownload(doc, true)}
-                      disabled={isDownloading === doc.id || doc.isLocked}
+                      onClick={() => handleAction(doc, 'pdf')}
+                      disabled={isLoading?.startsWith(doc.id) || doc.isLocked}
                       aria-label="Save as PDF"
                     >
                       <FileDown />

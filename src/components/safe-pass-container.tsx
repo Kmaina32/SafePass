@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import CryptoJS from "crypto-js";
 
 const CHECK_VALUE = "safepass_ok";
-const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 
@@ -51,7 +51,7 @@ export function SafePassContainer() {
   const [masterPassword, setMasterPassword] = useState("");
   const [authError, setAuthError] = useState<string | undefined>();
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [activeView, setActiveView] = useState<ActiveView>('passwords');
+  const [activeView, setActiveView] = useState<ActiveView>('dashboard');
 
   const [user, loading] = useAuthState(auth);
   const isMounted = useMounted();
@@ -63,12 +63,14 @@ export function SafePassContainer() {
         const storedPassword = sessionStorage.getItem(`safepass_mp_${user.uid}`);
         if (storedPassword) {
             try {
-                const decryptedCheck = decrypt(userData.masterPasswordCheck, storedPassword);
-                if (decryptedCheck === CHECK_VALUE) {
-                    setMasterPassword(storedPassword);
-                    setIsUnlocked(true);
-                } else {
-                    sessionStorage.removeItem(`safepass_mp_${user.uid}`);
+                if (userData.masterPasswordCheck) {
+                    const decryptedCheck = decrypt(userData.masterPasswordCheck, storedPassword);
+                    if (decryptedCheck === CHECK_VALUE) {
+                        setMasterPassword(storedPassword);
+                        setIsUnlocked(true);
+                    } else {
+                        sessionStorage.removeItem(`safepass_mp_${user.uid}`);
+                    }
                 }
             } catch (error) {
                  sessionStorage.removeItem(`safepass_mp_${user.uid}`);
@@ -174,16 +176,36 @@ export function SafePassContainer() {
         sessionStorage.setItem(`safepass_mp_${user.uid}`, password);
       } else {
         setAuthError("Invalid master password.");
+        if (user) {
+            const failedAttempt = {
+                timestamp: new Date().toISOString(),
+                location: 'Unknown' // This could be enhanced with an IP lookup service
+            };
+            const updates = {
+                [`/users/${user.uid}/failedAttempts/${Date.now()}`]: failedAttempt
+            };
+            update(ref(db), updates);
+        }
       }
     } catch (error) {
       setAuthError("Invalid master password.");
+      if (user) {
+            const failedAttempt = {
+                timestamp: new Date().toISOString(),
+                location: 'Unknown'
+            };
+            const updates = {
+                [`/users/${user.uid}/failedAttempts/${Date.now()}`]: failedAttempt
+            };
+            update(ref(db), updates);
+        }
     }
   };
 
-  const handleAddCredential = (values: { url: string; username: string; password: string, category?: string, notes?: string }) => {
+  const handleAddCredential = (values: Omit<Credential, 'id' | 'password_encrypted' | 'deletedAt'> & { password: string }) => {
     if (!masterPassword || !user) return;
 
-    const newCredential: Credential = {
+    const newCredential: Omit<Credential, 'deletedAt'> = {
       id: crypto.randomUUID(),
       url: values.url,
       username: values.username,
@@ -199,7 +221,7 @@ export function SafePassContainer() {
       .catch((error) => console.error("Failed to add credential", error));
   };
   
-  const handleUpdateCredential = (values: { id: string; url: string; username: string; password: string, category?: string, notes?: string }) => {
+  const handleUpdateCredential = (values: Omit<Credential, 'password_encrypted' | 'deletedAt'> & { password: string }) => {
     if (!masterPassword || !user || !userData?.credentials) return;
 
     const updatedCredentials = userData.credentials.map(cred => {
@@ -220,12 +242,52 @@ export function SafePassContainer() {
       .catch((error) => console.error("Failed to update credential", error));
   };
 
-  const handleDeleteCredential = (id: string) => {
+  const handleDeleteItem = (id: string, itemType: string, isPermanent = false) => {
     if (!user || !userData) return;
-    const updatedCredentials = (userData.credentials || []).filter((c) => c.id !== id);
-    set(ref(db, `users/${user.uid}/credentials`), updatedCredentials)
-      .catch((error) => console.error("Failed to delete credential", error));
-  };
+    
+    const itemPath = `/${itemType}s`; // e.g., /credentials, /documents
+    const currentItems = (userData as any)[`${itemType}s`] || [];
+
+    if (isPermanent) {
+        const updatedItems = currentItems.filter((item: any) => item.id !== id);
+        const itemRef = ref(db, `users/${user.uid}${itemPath}`);
+        if (updatedItems.length > 0) {
+            set(itemRef, updatedItems);
+        } else {
+            remove(itemRef);
+        }
+        toast({ title: 'Success', description: 'Item permanently deleted.' });
+    } else {
+        const updatedItems = currentItems.map((item: any) => {
+            if (item.id === id) {
+                return { ...item, deletedAt: new Date().toISOString() };
+            }
+            return item;
+        });
+        set(ref(db, `users/${user.uid}${itemPath}`), updatedItems)
+          .catch((error) => console.error(`Failed to move ${itemType} to trash`, error));
+    }
+};
+
+  const handleRestoreItem = (itemToRestore: any, itemType: string) => {
+    if (!user || !userData) return;
+    const itemPath = `/${itemType}s`;
+    const currentItems = (userData as any)[`${itemType}s`] || [];
+    
+    const updatedItems = currentItems.map((item: any) => {
+        if (item.id === itemToRestore.id) {
+            const { deletedAt, ...restoredItem } = item;
+            return restoredItem;
+        }
+        return item;
+    });
+
+    set(ref(db, `users/${user.uid}${itemPath}`), updatedItems)
+        .then(() => toast({ title: 'Success', description: 'Item restored.' }))
+        .catch((error) => console.error(`Failed to restore ${itemType}`, error));
+};
+
+
 
   const handleAddDocument = async (file: File, name: string) => {
     if (!user || !masterPassword) return;
@@ -272,23 +334,7 @@ export function SafePassContainer() {
   }
   
   const handleDeleteDocument = async (id: string) => {
-    if (!user || !userData?.documents) return;
-    
-    try {
-        const updatedDocs = userData.documents.filter(d => d.id !== id);
-        const docRef = ref(db, `users/${user.uid}/documents`);
-        
-        if (updatedDocs.length > 0) {
-             await set(docRef, updatedDocs);
-        } else {
-            await remove(docRef);
-        }
-
-        toast({ title: "Success", description: "Document deleted." });
-    } catch (error) {
-        console.error("Error deleting document:", error);
-        toast({ variant: 'destructive', title: "Delete Failed", description: "Could not delete the document." });
-    }
+    handleDeleteItem(id, 'document');
   }
   
   const handleToggleDocumentLock = async (id: string) => {
@@ -308,10 +354,10 @@ export function SafePassContainer() {
     }
   }
 
-  const handleAddPaymentCard = (values: Omit<PaymentCard, 'id'>) => {
+  const handleAddPaymentCard = (values: Omit<PaymentCard, 'id' | 'deletedAt'>) => {
     if (!masterPassword || !user) return;
 
-    const newCard: PaymentCard = {
+    const newCard: Omit<PaymentCard, 'deletedAt'> = {
         id: crypto.randomUUID(),
         ...values,
         cardNumber_encrypted: encrypt(values.cardNumber_encrypted, masterPassword),
@@ -346,19 +392,12 @@ export function SafePassContainer() {
   }
   
   const handleDeletePaymentCard = (id: string) => {
-      if (!user || !userData?.paymentCards) return;
-      const updatedCards = userData.paymentCards.filter((c) => c.id !== id);
-      const cardRef = ref(db, `users/${user.uid}/paymentCards`);
-      if (updatedCards.length > 0) {
-        set(cardRef, updatedCards);
-      } else {
-        remove(cardRef);
-      }
+      handleDeleteItem(id, 'paymentCard');
   }
   
-  const handleAddSecureNote = (values: { title: string; content: string; category?: string }) => {
+  const handleAddSecureNote = (values: Omit<SecureNote, 'id' | 'createdAt' | 'title_encrypted'| 'content_encrypted' | 'deletedAt'>) => {
     if (!masterPassword || !user) return;
-    const newNote: SecureNote = {
+    const newNote: Omit<SecureNote, 'deletedAt'> = {
       id: crypto.randomUUID(),
       title_encrypted: encrypt(values.title, masterPassword),
       content_encrypted: encrypt(values.content, masterPassword),
@@ -369,7 +408,7 @@ export function SafePassContainer() {
     set(ref(db, `users/${user.uid}/secureNotes`), [...notes, newNote]);
   };
 
-  const handleUpdateSecureNote = (values: { id: string; title: string; content: string; category?: string }) => {
+  const handleUpdateSecureNote = (values: Omit<SecureNote, 'createdAt'| 'title_encrypted' | 'content_encrypted' | 'deletedAt'>) => {
     if (!masterPassword || !user || !userData?.secureNotes) return;
     const updatedNotes = userData.secureNotes.map(note =>
       note.id === values.id
@@ -385,17 +424,10 @@ export function SafePassContainer() {
   };
   
   const handleDeleteSecureNote = (id: string) => {
-    if (!user || !userData?.secureNotes) return;
-    const updatedNotes = userData.secureNotes.filter(note => note.id !== id);
-    const noteRef = ref(db, `users/${user.uid}/secureNotes`);
-    if (updatedNotes.length > 0) {
-        set(noteRef, updatedNotes);
-    } else {
-        remove(noteRef);
-    }
+    handleDeleteItem(id, 'secureNote');
   };
 
-  const handleAddIdentity = (values: Omit<Identity, 'id'>) => {
+  const handleAddIdentity = (values: Omit<Identity, 'id' | 'deletedAt'>) => {
     if (!masterPassword || !user) return;
     const identities = userData?.identities || [];
     const newIdentity = { ...values, id: crypto.randomUUID() };
@@ -412,7 +444,7 @@ export function SafePassContainer() {
     set(ref(db, `users/${user.uid}/identities`), [...identities, newIdentity]);
   };
   
-  const handleUpdateIdentity = (values: Identity) => {
+  const handleUpdateIdentity = (values: Omit<Identity, 'deletedAt'>) => {
     if (!masterPassword || !user || !userData?.identities) return;
     const updatedIdentities = userData.identities.map(identity => {
       if (identity.id === values.id) {
@@ -433,14 +465,7 @@ export function SafePassContainer() {
   };
   
   const handleDeleteIdentity = (id: string) => {
-    if (!user || !userData?.identities) return;
-    const updatedIdentities = userData.identities.filter(identity => identity.id !== id);
-    const identityRef = ref(db, `users/${user.uid}/identities`);
-     if (updatedIdentities.length > 0) {
-        set(identityRef, updatedIdentities);
-    } else {
-        remove(identityRef);
-    }
+    handleDeleteItem(id, 'identity');
   };
 
   const handleLock = () => {
@@ -493,8 +518,9 @@ export function SafePassContainer() {
           masterPassword={masterPassword}
           onAddCredential={handleAddCredential}
           onUpdateCredential={handleUpdateCredential}
-          onDeleteCredential={handleDeleteCredential}
+          onDeleteCredential={handleDeleteItem}
           activeView={activeView}
+          onNavigate={setActiveView}
           onAddDocument={handleAddDocument}
           onDeleteDocument={handleDeleteDocument}
           onToggleDocumentLock={handleToggleDocumentLock}
@@ -504,9 +530,11 @@ export function SafePassContainer() {
           onAddSecureNote={handleAddSecureNote}
           onUpdateSecureNote={handleUpdateSecureNote}
           onDeleteSecureNote={handleDeleteSecureNote}
+  
           onAddIdentity={handleAddIdentity}
           onUpdateIdentity={handleUpdateIdentity}
           onDeleteIdentity={handleDeleteIdentity}
+          onRestoreItem={handleRestoreItem}
       />
     </DashboardLayout>
   );

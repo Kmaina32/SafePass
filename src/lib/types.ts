@@ -1,16 +1,19 @@
 
+type BaseItem = {
+    id: string;
+    deletedAt?: string; // ISO string
+}
 
-export interface Credential {
-  id: string;
+export interface Credential extends BaseItem {
   url: string;
   username: string;
   password_encrypted: string;
   category?: string;
   notes?: string;
+  failedAttempts?: { timestamp: string, location: string }[];
 }
 
-export interface SecureDocument {
-    id: string;
+export interface SecureDocument extends BaseItem {
     name: string;
     type: string;
     data_encrypted: string; // The encrypted file content as a Base64 string
@@ -21,8 +24,7 @@ export interface SecureDocument {
     isLocked?: boolean;
 }
 
-export interface PaymentCard {
-    id: string;
+export interface PaymentCard extends BaseItem {
     cardholderName: string;
     cardNumber_encrypted: string;
     expiryDate_encrypted: string;
@@ -31,16 +33,16 @@ export interface PaymentCard {
     notes?: string;
 }
 
-export interface SecureNote {
-    id: string;
+export interface SecureNote extends BaseItem {
     title_encrypted: string;
     content_encrypted: string;
     createdAt: string;
     category?: string;
+    // Allow any other properties for flexibility
+    [key: string]: any;
 }
 
-export interface Identity {
-    id: string;
+export interface Identity extends BaseItem {
     title: string;
     // Name
     firstName_encrypted?: string;
@@ -76,6 +78,7 @@ export interface UserData {
   secureNotes: SecureNote[];
   identities: Identity[];
   notifications: Notification[];
+  failedAttempts?: { [key: string]: { timestamp: string; location: string } };
   lastSeen?: string;
   profile?: {
       email?: string | null;

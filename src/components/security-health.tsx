@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -6,15 +7,17 @@ import type { Credential } from '@/lib/types';
 import { decrypt } from '@/lib/encryption';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CheckCircle, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { analyzePassword } from '@/ai/flows/password-strength-flow';
 import { type PasswordAnalysis } from '@/ai/lib/types';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { ActiveView } from './dashboard-layout';
 
 type SecurityHealthProps = {
   credentials: Credential[];
   masterPassword: string;
+  onNavigate: (view: ActiveView) => void;
 };
 
 type SecurityIssue = {
@@ -25,7 +28,7 @@ type SecurityIssue = {
   details: string;
 };
 
-export function SecurityHealth({ credentials, masterPassword }: SecurityHealthProps) {
+export function SecurityHealth({ credentials, masterPassword, onNavigate }: SecurityHealthProps) {
   const [decryptedPasswords, setDecryptedPasswords] = useState<Map<string, string>>(new Map());
   const [passwordAnalyses, setPasswordAnalyses] = useState<Map<string, PasswordAnalysis>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
@@ -162,6 +165,31 @@ export function SecurityHealth({ credentials, masterPassword }: SecurityHealthPr
         </CardContent>
       </Card>
       
+      {credentials.filter(c => c.failedAttempts && c.failedAttempts.length > 0).length > 0 && (
+         <Card>
+            <CardHeader>
+                <CardTitle>Recent Suspicious Activity</CardTitle>
+                <CardDescription>Review recent failed attempts to unlock your vault.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                {credentials.map(cred => (
+                    cred.failedAttempts?.map((attempt, index) => (
+                        <div key={`${cred.id}-${index}`} className="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-muted/50">
+                            <AlertCircle className="h-5 w-5 text-destructive"/>
+                            <div>
+                                <p className="font-medium">Failed master password attempt</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {new Date(attempt.timestamp).toLocaleString()} from location: {attempt.location || 'Unknown'}
+                                </p>
+                            </div>
+                        </div>
+                    ))
+                ))}
+            </CardContent>
+        </Card>
+      )}
+
+
       {issues.length > 0 && (
         <Card>
             <CardHeader>
@@ -185,7 +213,7 @@ export function SecurityHealth({ credentials, masterPassword }: SecurityHealthPr
                             <p className="text-sm text-muted-foreground">{issue.username}</p>
                             <p className="text-sm mt-2">{issue.details}</p>
                         </div>
-                         <Button variant="secondary" size="sm" className="ml-auto">
+                         <Button variant="secondary" size="sm" className="ml-auto" onClick={() => onNavigate('passwords')}>
                             Fix Now
                         </Button>
                     </div>

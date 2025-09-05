@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { AddPasswordDialog } from "@/components/add-password-dialog";
@@ -23,14 +22,18 @@ import { SettingsView } from "./settings-view";
 import { AdminDashboard } from "./admin-dashboard";
 import { Button } from "./ui/button";
 import { AnalyzeDocDialog } from "./analyze-doc-dialog";
+import { MainDashboard } from "./main-dashboard";
+import { MediaPreviewDialog } from "./media-preview-dialog";
+import { TrashView } from "./trash-view";
 
-type NewCredential = Omit<Credential, 'id' | 'password_encrypted'> & { password: string };
+type NewCredential = Omit<Credential, 'id' | 'password_encrypted' | 'deletedAt'> & { password: string };
 type UpdateCredential = NewCredential & { id: string };
-type NewPaymentCard = Omit<PaymentCard, 'id'>;
-type NewSecureNote = Omit<SecureNote, 'id' | 'title_encrypted' | 'content_encrypted' | 'createdAt'> & { title: string, content: string };
+type NewPaymentCard = Omit<PaymentCard, 'id' | 'deletedAt'>;
+type NewSecureNote = Omit<SecureNote, 'id' | 'title_encrypted' | 'content_encrypted' | 'createdAt' | 'deletedAt'> & { title: string, content: string };
 type UpdateSecureNote = NewSecureNote & { id: string };
-type NewIdentity = Omit<Identity, 'id'>;
-type UpdateIdentity = Identity;
+type NewIdentity = Omit<Identity, 'id' | 'deletedAt'>;
+type UpdateIdentity = Omit<Identity, 'deletedAt'>;
+type TrashedItem = (Credential | SecureDocument | PaymentCard | SecureNote | Identity) & { itemType: 'credential' | 'document' | 'paymentCard' | 'note' | 'identity', deletedAt: string };
 
 
 type PasswordManagerProps = {
@@ -41,9 +44,10 @@ type PasswordManagerProps = {
   identities: Identity[];
   masterPassword: string;
   activeView: ActiveView;
+  onNavigate: (view: ActiveView) => void;
   onAddCredential: (values: NewCredential) => void;
   onUpdateCredential: (values: UpdateCredential) => void;
-  onDeleteCredential: (id: string) => void;
+  onDeleteCredential: (id: string, itemType: TrashedItem['itemType'], isPermanent?: boolean) => void;
   onAddDocument: (file: File, name: string) => Promise<void>;
   onDeleteDocument: (id: string) => void;
   onToggleDocumentLock: (id: string) => void;
@@ -56,6 +60,7 @@ type PasswordManagerProps = {
   onAddIdentity: (values: NewIdentity) => void;
   onUpdateIdentity: (values: UpdateIdentity) => void;
   onDeleteIdentity: (id: string) => void;
+  onRestoreItem: (item: any, itemType: TrashedItem['itemType']) => void;
 };
 
 function EmptyState({ view }: { view: ActiveView }) {
@@ -92,7 +97,7 @@ function EmptyState({ view }: { view: ActiveView }) {
         },
         dashboard: { icon: LayoutGrid, title: "Dashboard", message: "Get a bird's-eye view of your vault's security and activity. This feature is coming soon!"},
         generator: { icon: RotateCw, title: "Password Generator", message: "Create strong, unique passwords for all your accounts."},
-        trash: { icon: Trash2, title: "Trash", message: "Review and restore items you've recently deleted. This feature is coming soon!"},
+        trash: { icon: Trash2, title: "Trash is empty.", message: "Deleted items will appear here. You can restore them or delete them permanently."},
         settings: { icon: Settings, title: "Settings", message: "Customize your SafePass experience, including themes and security."},
         admin: { icon: ShieldQuestion, title: "Admin Panel", message: "Manage users and application settings."},
         documentation: { icon: BookOpen, title: "Capstone Documentation", message: "Viewing project documentation."}
@@ -118,6 +123,7 @@ export function PasswordManager({
   identities,
   masterPassword,
   activeView,
+  onNavigate,
   onAddCredential,
   onUpdateCredential,
   onDeleteCredential,
@@ -133,67 +139,98 @@ export function PasswordManager({
   onAddIdentity,
   onUpdateIdentity,
   onDeleteIdentity,
+  onRestoreItem,
 }: PasswordManagerProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
+  const allItems = useMemo(() => [
+      ...credentials.map(c => ({ ...c, itemType: 'credential' as const })),
+      ...documents.map(d => ({ ...d, itemType: 'document' as const })),
+      ...paymentCards.map(p => ({ ...p, itemType: 'paymentCard' as const })),
+      ...secureNotes.map(n => ({ ...n, itemType: 'note' as const })),
+      ...identities.map(i => ({ ...i, itemType: 'identity' as const })),
+  ], [credentials, documents, paymentCards, secureNotes, identities]);
+
+  const nonTrashedItems = useMemo(() => allItems.filter(item => !item.deletedAt), [allItems]);
+  const trashedItems = useMemo(() => allItems.filter((item): item is TrashedItem => !!item.deletedAt), [allItems]);
+
+  const activeCredentials = useMemo(() => nonTrashedItems.filter(item => item.itemType === 'credential') as Credential[], [nonTrashedItems]);
+  const activeDocuments = useMemo(() => nonTrashedItems.filter(item => item.itemType === 'document') as SecureDocument[], [nonTrashedItems]);
+  const activePaymentCards = useMemo(() => nonTrashedItems.filter(item => item.itemType === 'paymentCard') as PaymentCard[], [nonTrashedItems]);
+  const activeSecureNotes = useMemo(() => nonTrashedItems.filter(item => item.itemType === 'note') as SecureNote[], [nonTrashedItems]);
+  const activeIdentities = useMemo(() => nonTrashedItems.filter(item => item.itemType === 'identity') as Identity[], [nonTrashedItems]);
+
   const filteredCredentials = useMemo(() => {
-    if (!searchQuery) return credentials;
-    return credentials.filter(
+    if (!searchQuery) return activeCredentials;
+    return activeCredentials.filter(
       (c) =>
         c.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.category?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [credentials, searchQuery]);
+  }, [activeCredentials, searchQuery]);
 
   const filteredDocuments = useMemo(() => {
-    if (!searchQuery) return documents;
-    return documents.filter(
+    if (!searchQuery) return activeDocuments;
+    return activeDocuments.filter(
       (d) =>
         d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         d.type.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [documents, searchQuery]);
+  }, [activeDocuments, searchQuery]);
 
   const filteredPaymentCards = useMemo(() => {
-    if (!searchQuery) return paymentCards;
-    return paymentCards.filter(
+    if (!searchQuery) return activePaymentCards;
+    return activePaymentCards.filter(
       (c) =>
         c.cardholderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.cardType.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [paymentCards, searchQuery]);
+  }, [activePaymentCards, searchQuery]);
   
   const filteredSecureNotes = useMemo(() => {
-    if (!searchQuery) return secureNotes;
+    if (!searchQuery) return activeSecureNotes;
     // We can't search encrypted content, so we will filter on category if it exists
-    return secureNotes.filter(
+    return activeSecureNotes.filter(
       (n) => n.category?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [secureNotes, searchQuery]);
+  }, [activeSecureNotes, searchQuery]);
 
   const filteredIdentities = useMemo(() => {
-      if (!searchQuery) return identities;
-      return identities.filter(i => 
+      if (!searchQuery) return activeIdentities;
+      return activeIdentities.filter(i => 
         i.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
-  }, [identities, searchQuery]);
+  }, [activeIdentities, searchQuery]);
 
   const renderContent = () => {
     switch (activeView) {
+        case 'dashboard':
+            return <MainDashboard
+                stats={{
+                    passwords: activeCredentials.length,
+                    documents: activeDocuments.length,
+                    notes: activeSecureNotes.length,
+                    identities: activeIdentities.length,
+                    cards: activePaymentCards.length,
+                }}
+                credentials={activeCredentials}
+                masterPassword={masterPassword}
+                onNavigate={onNavigate}
+            />;
         case 'passwords':
-            return credentials.length > 0 ? (
+            return activeCredentials.length > 0 ? (
                 filteredCredentials.length > 0 ? (
                      <PasswordList
                         credentials={filteredCredentials}
                         masterPassword={masterPassword}
                         onUpdateCredential={onUpdateCredential}
-                        onDeleteCredential={onDeleteCredential}
+                        onDeleteCredential={(id) => onDeleteCredential(id, 'credential')}
                     />
                 ) : <p className="text-center text-muted-foreground mt-16">No passwords found for "{searchQuery}"</p>
             ) : <EmptyState view="passwords" />;
         case 'documents':
-            return documents.length > 0 ? (
+            return activeDocuments.length > 0 ? (
                 filteredDocuments.length > 0 ? (
                      <DocumentList
                         documents={filteredDocuments}
@@ -204,7 +241,7 @@ export function PasswordManager({
                 ) : <p className="text-center text-muted-foreground mt-16">No documents found for "{searchQuery}"</p>
             ) : <EmptyState view="documents" />;
         case 'payments':
-            return paymentCards.length > 0 ? (
+            return activePaymentCards.length > 0 ? (
                 filteredPaymentCards.length > 0 ? (
                     <PaymentCardList
                         paymentCards={filteredPaymentCards}
@@ -215,7 +252,7 @@ export function PasswordManager({
                 ) : <p className="text-center text-muted-foreground mt-16">No cards found for "{searchQuery}"</p>
             ) : <EmptyState view="payments" />;
         case 'notes':
-            return secureNotes.length > 0 ? (
+            return activeSecureNotes.length > 0 ? (
                 filteredSecureNotes.length > 0 ? (
                     <NoteList
                         notes={filteredSecureNotes}
@@ -226,7 +263,7 @@ export function PasswordManager({
                  ) : <p className="text-center text-muted-foreground mt-16">No notes found for "{searchQuery}"</p>
             ) : <EmptyState view="notes" />;
         case 'identities':
-            return identities.length > 0 ? (
+            return activeIdentities.length > 0 ? (
                  filteredIdentities.length > 0 ? (
                     <IdentityList
                         identities={filteredIdentities}
@@ -237,11 +274,20 @@ export function PasswordManager({
                 ) : <p className="text-center text-muted-foreground mt-16">No identities found for "{searchQuery}"</p>
             ) : <EmptyState view="identities" />;
         case 'security':
-            return credentials.length > 0 ? (
-                <SecurityHealth credentials={credentials} masterPassword={masterPassword} />
+            return activeCredentials.length > 0 ? (
+                <SecurityHealth credentials={activeCredentials} masterPassword={masterPassword} onNavigate={onNavigate} />
             ) : <EmptyState view="security" />;
         case 'generator':
             return <PasswordGeneratorView />;
+        case 'trash':
+             return trashedItems.length > 0 ? (
+                <TrashView
+                    items={trashedItems}
+                    masterPassword={masterPassword}
+                    onRestoreItem={onRestoreItem}
+                    onPermanentlyDeleteItem={(id, itemType) => onDeleteCredential(id, itemType, true)}
+                />
+            ) : <EmptyState view="trash" />;
         case 'settings':
             return <SettingsView />;
         case 'admin':
@@ -255,7 +301,7 @@ export function PasswordManager({
      const showSearch = ['passwords', 'documents', 'payments', 'notes', 'identities'].includes(activeView);
      
      return (
-        <div className="flex items-center gap-4 py-4">
+        <div className="flex flex-wrap items-center gap-4 py-4">
             {showSearch ? (
                  <div className="relative w-full max-w-lg">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -267,11 +313,11 @@ export function PasswordManager({
                     />
                 </div>
             ) : <div className="flex-1" />}
-            <div className="ml-auto flex gap-2 sm:gap-4 items-center">
+            <div className="ml-auto flex flex-wrap gap-2 sm:gap-4 items-center">
                 {activeView === 'passwords' && <AddPasswordDialog onAddCredential={onAddCredential} />}
                 {activeView === 'documents' && (
                     <>
-                        <AnalyzeDocDialog documents={documents} masterPassword={masterPassword} />
+                        <AnalyzeDocDialog documents={activeDocuments} masterPassword={masterPassword} />
                         <AddDocumentDialog onAddDocument={onAddDocument} />
                     </>
                 )}
@@ -284,11 +330,12 @@ export function PasswordManager({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
         {renderHeaderActions()}
         <div className="flex-grow pb-8">
             {renderContent()}
        </div>
+       <MediaPreviewDialog />
     </div>
   );
 }
