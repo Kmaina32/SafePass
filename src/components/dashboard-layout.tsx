@@ -83,7 +83,11 @@ function NotificationBell({ user }: { user: FirebaseUser | null | undefined }) {
         const listener = onValue(notificationsRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                const sorted = Object.values(data).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                const sorted = Object.values(data).sort((a: any, b: any) => {
+                    const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                    const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                    return dateB - dateA;
+                })
                 setNotifications(sorted as NotificationType[]);
             } else {
                 setNotifications([]);
@@ -112,16 +116,27 @@ function NotificationBell({ user }: { user: FirebaseUser | null | undefined }) {
                         </p>
                     </div>
                     <div className="grid gap-2 max-h-96 overflow-y-auto">
-                        {notifications.length > 0 ? notifications.map(n => (
-                            <div key={n.id} className="grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0">
-                                <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
-                                <div className="grid gap-1">
-                                    <p className="text-sm font-medium">{n.title}</p>
-                                    <p className="text-sm text-muted-foreground">{n.message}</p>
-                                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(n.timestamp), { addSuffix: true })}</p>
+                        {notifications.length > 0 ? notifications.map(n => {
+                            let timeAgo = 'just now';
+                            try {
+                                if (n.timestamp && !isNaN(new Date(n.timestamp).getTime())) {
+                                    timeAgo = formatDistanceToNow(new Date(n.timestamp), { addSuffix: true });
+                                }
+                            } catch (e) {
+                                console.error('Invalid timestamp for notification', n);
+                            }
+                           
+                            return (
+                                <div key={n.id} className="grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0">
+                                    <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
+                                    <div className="grid gap-1">
+                                        <p className="text-sm font-medium">{n.title}</p>
+                                        <p className="text-sm text-muted-foreground">{n.message}</p>
+                                        <p className="text-xs text-muted-foreground">{timeAgo}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        )) : <p className="text-sm text-muted-foreground">No new notifications.</p>}
+                            )
+                        }) : <p className="text-sm text-muted-foreground">No new notifications.</p>}
                     </div>
                 </div>
             </PopoverContent>
@@ -191,20 +206,20 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                                 <span className="sr-only">Toggle Menu</span>
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" className="sm:max-w-xs p-0">
+                        <SheetContent side="left" className="sm:max-w-xs p-0 flex flex-col">
                             <div className="flex h-[60px] items-center border-b px-6">
                                 <a href="#" className="flex items-center gap-2 font-semibold text-lg">
                                     <ShieldCheck className="h-6 w-6 text-primary"/>
                                     <span>SafePass</span>
                                 </a>
                             </div>
-                            <div className="overflow-auto py-4">
+                            <div className="overflow-auto py-4 flex-1">
                                 <SidebarNav activeView={activeView} user={user} onNavigate={(view) => {
                                     onNavigate(view);
                                     setMobileMenuOpen(false);
                                 }} />
                             </div>
-                             <div className="mt-auto p-4 border-t space-y-4">
+                             <div className="p-4 border-t space-y-4">
                                 <nav className="grid items-start px-4 text-sm font-medium">
                                     <Button
                                         asChild
@@ -217,6 +232,26 @@ export function DashboardLayout({ user, children, onLock, activeView, onNavigate
                                         </Link>
                                     </Button>
                                 </nav>
+                                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage src={user?.photoURL || undefined} alt="User Avatar" />
+                                        <AvatarFallback>{userInitial}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex flex-col overflow-hidden">
+                                        <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
+                                        <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => { onLock(); setMobileMenuOpen(false); }}>
+                                        <Lock />
+                                        Lock
+                                    </Button>
+                                     <Button variant="outline" size="sm" onClick={() => { auth.signOut(); setMobileMenuOpen(false); }}>
+                                        <LogOut />
+                                        Sign Out
+                                    </Button>
+                                </div>
                              </div>
                         </SheetContent>
                     </Sheet>
